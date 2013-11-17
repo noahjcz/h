@@ -415,10 +415,11 @@ annotorious.shape.geom.Rectangle = function(a, b, c, d) {
   0 < c ? (this.x = a, this.width = c) : (this.x = a + c, this.width = -c);
   0 < d ? (this.y = b, this.height = d) : (this.y = b + d, this.height = -d)
 };
-annotorious.shape.Shape = function(a, b, c) {
+annotorious.shape.Shape = function(a, b, c, d) {
   this.type = a;
   this.geometry = b;
-  c && (this.units = c)
+  c && (this.units = c);
+  d && (this.style = d)
 };
 annotorious.shape.ShapeType = {POINT:"point", RECTANGLE:"rect", POLYGON:"polygon"};
 annotorious.shape.Units = {PIXEL:"pixel", FRACTION:"fraction"};
@@ -442,10 +443,10 @@ annotorious.shape.getBoundingRect = function(a) {
     return a
   }
   if(a.type == annotorious.shape.ShapeType.POLYGON) {
-    for(var a = a.geometry.points, b = a[0].x, c = a[0].x, d = a[0].y, e = a[0].y, f = 1;f < a.length;f++) {
-      a[f].x > c && (c = a[f].x), a[f].x < b && (b = a[f].x), a[f].y > e && (e = a[f].y), a[f].y < d && (d = a[f].y)
+    for(var b = a.geometry.points, c = b[0].x, d = b[0].x, e = b[0].y, f = b[0].y, g = 1;g < b.length;g++) {
+      b[g].x > d && (d = b[g].x), b[g].x < c && (c = b[g].x), b[g].y > f && (f = b[g].y), b[g].y < e && (e = b[g].y)
     }
-    return new annotorious.shape.Shape(annotorious.shape.ShapeType.RECTANGLE, new annotorious.shape.geom.Rectangle(b, d, c - b, e - d))
+    return new annotorious.shape.Shape(annotorious.shape.ShapeType.RECTANGLE, new annotorious.shape.geom.Rectangle(c, e, d - c, f - e), !1, a.style)
   }
 };
 annotorious.shape.getCentroid = function(a) {
@@ -457,26 +458,24 @@ annotorious.shape.getCentroid = function(a) {
   }
 };
 annotorious.shape.expand = function(a, b) {
-  return new annotorious.shape.Shape(annotorious.shape.ShapeType.POLYGON, new annotorious.shape.geom.Polygon(annotorious.shape.geom.Polygon.expandPolygon(a.geometry.points, b)))
+  return new annotorious.shape.Shape(annotorious.shape.ShapeType.POLYGON, new annotorious.shape.geom.Polygon(annotorious.shape.geom.Polygon.expandPolygon(a.geometry.points, b)), !1, a.style)
 };
 annotorious.shape.transform = function(a, b) {
   if(a.type == annotorious.shape.ShapeType.RECTANGLE) {
     var c = a.geometry, d = b({x:c.x, y:c.y}), c = b({x:c.x + c.width, y:c.y + c.height});
-    return new annotorious.shape.Shape(annotorious.shape.ShapeType.RECTANGLE, new annotorious.shape.geom.Rectangle(d.x, d.y, c.x - d.x, c.y - d.y))
+    return new annotorious.shape.Shape(annotorious.shape.ShapeType.RECTANGLE, new annotorious.shape.geom.Rectangle(d.x, d.y, c.x - d.x, c.y - d.y), !1, a.style)
   }
   if(a.type == annotorious.shape.ShapeType.POLYGON) {
     var e = [];
     goog.array.forEach(a.geometry.points, function(a) {
       e.push(b(a))
     });
-    return new annotorious.shape.Shape(annotorious.shape.ShapeType.POLYGON, new annotorious.shape.geom.Polygon(e))
+    return new annotorious.shape.Shape(annotorious.shape.ShapeType.POLYGON, new annotorious.shape.geom.Polygon(e), !1, a.style)
   }
 };
 annotorious.shape.hashCode = function(a) {
   return JSON.stringify(a.geometry)
 };
-window.annotorious || (window.annotorious = {});
-window.annotorious.geometry || (window.annotorious.geometry = {}, window.annotorious.geometry.expand = annotorious.shape.expand);
 goog.debug = {};
 goog.debug.Error = function(a) {
   Error.captureStackTrace ? Error.captureStackTrace(this, goog.debug.Error) : this.stack = Error().stack || "";
@@ -6785,7 +6784,7 @@ annotorious.mediatypes.image.Viewer = function(a, b) {
   this._shapes = [];
   this._g2d = this._canvas.getContext("2d");
   this._eventsEnabled = !0;
-  this._visibleMode = this._keepHighlighted = !1;
+  this._keepHighlighted = !1;
   var c = this;
   goog.events.listen(this._canvas, annotorious.events.ui.EventType.MOVE, function(a) {
     c._eventsEnabled ? c._onMouseMove(a) : c._cachedMouseEvent = a
@@ -6855,27 +6854,24 @@ annotorious.mediatypes.image.Viewer.prototype._onMouseMove = function(a) {
   var b = this.topAnnotationAt(a.offsetX, a.offsetY);
   b ? (this._keepHighlighted = this._keepHighlighted && b == this._currentAnnotation, this._currentAnnotation ? this._currentAnnotation != b && (this._eventsEnabled = !1, this._annotator.popup.startHideTimer()) : (this._currentAnnotation = b, this.redraw(), this._annotator.fireEvent(annotorious.events.EventType.MOUSE_OVER_ANNOTATION, {annotation:this._currentAnnotation, mouseEvent:a}))) : !this._keepHighlighted && this._currentAnnotation && (this._eventsEnabled = !1, this._annotator.popup.startHideTimer())
 };
-annotorious.mediatypes.image.Viewer.prototype._draw = function(a, b, c) {
-  var d = goog.array.find(this._annotator.getAvailableSelectors(), function(b) {
+annotorious.mediatypes.image.Viewer.prototype._draw = function(a, b) {
+  var c = goog.array.find(this._annotator.getAvailableSelectors(), function(b) {
     return b.getSupportedShapeType() == a.type
   });
-  d ? d.drawShape(this._g2d, a, b, c) : console.log("WARNING unsupported shape type: " + a.type)
+  c ? c.drawShape(this._g2d, a, b) : console.log("WARNING unsupported shape type: " + a.type)
 };
 annotorious.mediatypes.image.Viewer.prototype.redraw = function() {
   this._g2d.clearRect(0, 0, this._canvas.width, this._canvas.height);
   var a = this;
   goog.array.forEach(this._annotations, function(b) {
-    b != a._currentAnnotation && (a._visibleMode ? a._draw(a._shapes[annotorious.shape.hashCode(b.shapes[0])], !0) : a._draw(a._shapes[annotorious.shape.hashCode(b.shapes[0])]))
+    b != a._currentAnnotation && a._draw(a._shapes[annotorious.shape.hashCode(b.shapes[0])])
   });
   if(this._currentAnnotation) {
     var b = this._shapes[annotorious.shape.hashCode(this._currentAnnotation.shapes[0])];
-    this._visibleMode ? this._draw(b, !0, !0) : this._draw(b, !0);
+    this._draw(b, !0);
     b = annotorious.shape.getBoundingRect(b).geometry;
     this._annotator.popup.show(this._currentAnnotation, new annotorious.shape.geom.Point(b.x, b.y + b.height + 5))
   }
-};
-annotorious.mediatypes.image.Viewer.prototype.setVisibleMode = function(a) {
-  this._visibleMode = a
 };
 annotorious.events = {};
 annotorious.events.ui = {};
@@ -6896,11 +6892,10 @@ annotorious.plugins.selection.RectDragSelector.prototype.init = function(a, b) {
   this._STROKE = "#ffffff";
   this._FILL = void 0;
   this._HI_STROKE = "#fff000";
-  this._HIPO_STROKE = "#ff7f00";
   this._HI_FILL = void 0;
-  this._canvas = a;
-  this._annotator = b;
-  this._g2d = a.getContext("2d");
+  this._canvas = b;
+  this._annotator = a;
+  this._g2d = b.getContext("2d");
   this._g2d.lineWidth = 1;
   this._enabled = !1
 };
@@ -6968,9 +6963,12 @@ annotorious.plugins.selection.RectDragSelector.prototype.getViewportBounds = fun
   this._opposite.y > this._anchor.y ? (c = this._anchor.y, d = this._opposite.y) : (c = this._opposite.y, d = this._anchor.y);
   return{top:c, right:a, bottom:d, left:b}
 };
-annotorious.plugins.selection.RectDragSelector.prototype.drawShape = function(a, b, c, d) {
-  b.type == annotorious.shape.ShapeType.RECTANGLE && (d ? (a.lineWidth = 1.2, c = this._HIPO_STROKE, d = this._HI_FILL) : c ? (a.lineWidth = 1.2, c = this._HI_STROKE, d = this._HI_FILL) : (a.lineWidth = 1, c = this._STROKE, d = this._FILL), b = b.geometry, a.strokeStyle = this._OUTLINE, a.strokeRect(b.x + 0.5, b.y + 0.5, b.width + 1, b.height + 1), a.strokeStyle = c, a.strokeRect(b.x + 1.5, b.y + 1.5, b.width - 1, b.height - 1), d && (a.fillStyle = d, a.fillRect(b.x + 1.5, b.y + 1.5, b.width - 1, 
-  b.height - 1)))
+annotorious.plugins.selection.RectDragSelector.prototype.drawShape = function(a, b, c) {
+  var d, e, f;
+  console.log("drawShape");
+  console.log(b);
+  b.type == annotorious.shape.ShapeType.RECTANGLE && ("style" in b ? c ? (e = b.style.hi_fill, d = b.style.hi_stroke, f = b.style.hi_outline) : (e = b.style.fill, d = b.style.stroke, f = b.style.outline) : (c ? (e = this._HI_FILL, d = this._HI_STROKE) : (e = this._FILL, d = this._STROKE), f = this._OUTLINE), a.lineWidth = c ? 1.2 : 1, b = b.geometry, f && (a.strokeStyle = f, a.strokeRect(b.x + 0.5, b.y + 0.5, b.width + 1, b.height + 1)), d && (a.strokeStyle = d, a.strokeRect(b.x + 1.5, b.y + 1.5, 
+  b.width - 1, b.height - 1)), e && (a.fillStyle = e, a.fillRect(b.x + 1.5, b.y + 1.5, b.width - 1, b.height - 1)))
 };
 annotorious.templates.image = {};
 annotorious.templates.image.canvas = function(a) {
@@ -6989,10 +6987,9 @@ annotorious.mediatypes.image.ImageAnnotator = function(a, b) {
   goog.style.setStyle(this.element, "position", "relative");
   goog.style.setStyle(this.element, "display", "inline-block");
   this._transferStyles(a, this.element);
-  var c = goog.style.getBounds(a);
-  goog.style.setSize(this.element, c.width, c.height);
   goog.dom.replaceNode(this.element, a);
   goog.dom.appendChild(this.element, a);
+  var c = goog.style.getBounds(a);
   this._viewCanvas = goog.soy.renderAsElement(annotorious.templates.image.canvas, {width:c.width, height:c.height});
   annotorious.events.ui.hasMouse && goog.dom.classes.add(this._viewCanvas, "annotorious-item-unfocus");
   goog.dom.appendChild(this.element, this._viewCanvas);
@@ -7001,7 +6998,7 @@ annotorious.mediatypes.image.ImageAnnotator = function(a, b) {
   goog.dom.appendChild(this.element, this._editCanvas);
   this.popup = b ? b : new annotorious.Popup(this);
   c = new annotorious.plugins.selection.RectDragSelector;
-  c.init(this._editCanvas, this);
+  c.init(this, this._editCanvas);
   this._selectors.push(c);
   this._currentSelector = c;
   this.editor = new annotorious.Editor(this);
@@ -7021,15 +7018,14 @@ annotorious.mediatypes.image.ImageAnnotator = function(a, b) {
   }));
   var e = annotorious.events.ui.hasTouch ? this._editCanvas : this._viewCanvas;
   goog.events.listen(e, annotorious.events.ui.EventType.DOWN, function(a) {
-    a.preventDefault();
     a = annotorious.events.ui.sanitizeCoordinates(a, e);
     d._viewer.highlightAnnotation(void 0);
     d._selectionEnabled ? (goog.style.showElement(d._editCanvas, !0), d._currentSelector.startSelection(a.x, a.y)) : (a = d._viewer.getAnnotationsAt(a.x, a.y), 0 < a.length && d._viewer.highlightAnnotation(a[0]))
   });
   this._eventBroker.addHandler(annotorious.events.EventType.SELECTION_COMPLETED, function(a) {
-    a = a.viewportBounds;
-    d.editor.setPosition(new annotorious.shape.geom.Point(a.left + d._image.offsetLeft, a.bottom + 4 + d._image.offsetTop));
-    d.editor.open()
+    var b = a.viewportBounds;
+    d.editor.setPosition(new annotorious.shape.geom.Point(b.left + d._image.offsetLeft, b.bottom + 4 + d._image.offsetTop));
+    d.editor.open(void 0, a)
   });
   this._eventBroker.addHandler(annotorious.events.EventType.SELECTION_CANCELED, function() {
     annotorious.events.ui.hasMouse && goog.style.showElement(d._editCanvas, !1);
@@ -7234,10 +7230,7 @@ annotorious.hypo.ImagePlugin = function(a, b) {
   this._popup = new annotorious.hypo.Popup(a, this._guest, this._eventBroker);
   this._imageAnnotator = new annotorious.mediatypes.image.ImageAnnotator(a, this._popup);
   this._popup.addAnnotator(this._imageAnnotator);
-  var c = new annotorious.plugin.PolygonSelector.Selector;
-  c.init(this._imageAnnotator, this._imageAnnotator._editCanvas);
-  this._imageAnnotator._selectors.push(c);
-  c = new annotorious.plugin.FancyBoxSelector.Selector;
+  var c = new annotorious.plugin.FancyBoxSelector.Selector;
   c.init(this._imageAnnotator, this._imageAnnotator._editCanvas);
   this._imageAnnotator._selectors.push(c);
   this._imageAnnotator._currentSelector = c;
@@ -7267,6 +7260,8 @@ annotorious.hypo.ImagePlugin = function(a, b) {
     d._guest.showViewer(b)
   });
   annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
+    console.log("adding annotation");
+    console.log(a);
     this._imageAnnotator.addAnnotation(a);
     this._annotations[a.id] = a
   };
@@ -7298,6 +7293,9 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
     var e = null;
     "rect" == a.shapeType ? e = new annotorious.shape.geom.Rectangle(a.geometry.x, a.geometry.y, a.geometry.width, a.geometry.height) : "polygon" == a.shapeType && (e = new annotorious.shape.geom.Polygon(a.geometry.points));
     e = new annotorious.shape.Shape(a.shapeType, e, annotorious.shape.Units.FRACTION);
+    e.style = this.defaultStyle;
+    console.log("shape");
+    console.log(e);
     d.shapes = [e];
     this.handlers[d.source].addAnnotation(d)
   };
@@ -7336,6 +7334,7 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
     }, [])
   };
   a.prototype.setActiveHighlights = function(a, c) {
+    console.log("setActiveHighlights");
     for(var d in this.handlers) {
       var e = this.handlers[d], f = !1, g;
       for(g in e._annotations) {
@@ -7343,7 +7342,7 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
         i.units == annotorious.shape.Units.FRACTION && (i = annotorious.shape.transform(i, function(a) {
           return e._imageAnnotator.fromItemCoordinates(a)
         }));
-        -1 != a.indexOf(h.hypoAnnotation.$$tag) ? (c ? e._imageAnnotator._viewer._draw(i, !0, !0) : e._imageAnnotator._viewer._draw(i, !0), f = !0) : c ? e._imageAnnotator._viewer._draw(i, !0) : e._imageAnnotator._viewer._draw(i, !1)
+        -1 != a.indexOf(h.hypoAnnotation.$$tag) ? (e._imageAnnotator._viewer._draw(i, !0), f = !0) : e._imageAnnotator._viewer._draw(i, !1)
       }
       c || (f ? goog.dom.classes.addRemove(e._imageAnnotator._viewCanvas, "annotorious-item-unfocus", "annotorious-item-focus") : goog.dom.classes.addRemove(e._imageAnnotator._viewCanvas, "annotorious-item-focus", "annotorious-item-unfocus"))
     }
@@ -7362,20 +7361,24 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
     return d
   };
   a.prototype.switchHighlightAll = function(a) {
+    console.log("switchHighlightAll");
     for(var c in this.handlers) {
-      var d = this.handlers[c];
-      d._imageAnnotator._viewer.setVisibleMode(a);
-      for(var e in d._annotations) {
-        var f = d._annotations[e].shapes[0];
-        f.units == annotorious.shape.Units.FRACTION && (f = annotorious.shape.transform(f, function(a) {
+      var d = this.handlers[c], e;
+      for(e in d._annotations) {
+        var f = d._annotations[e], g = f.shapes[0];
+        g.units == annotorious.shape.Units.FRACTION && (g = annotorious.shape.transform(g, function(a) {
           return d._imageAnnotator.fromItemCoordinates(a)
         }));
-        a ? d._imageAnnotator._viewer._draw(f, !0) : d._imageAnnotator._viewer._draw(f, !1)
+        a ? (g.style = this.highlightStyle, d._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(f.shapes[0])].style = this.highlightStyle) : (g.style = this.defaultStyle, d._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(f.shapes[0])].style = this.defaultStyle);
+        d._imageAnnotator._viewer._draw(g, !1)
       }
     }
   };
   a.prototype.pluginInit = function() {
-    var a = this._el.getElementsByTagName("img"), c = this;
+    var a = this._el.getElementsByTagName("img");
+    this.defaultStyle = {outline:"#000000", hi_outline:"#000000", stroke:"#ffffff", hi_stroke:"#fff000", fill:void 0, hi_fill:void 0};
+    this.highlightStyle = {outline:"#000000", hi_outline:"#000000", stroke:"#fff000", hi_stroke:"#ff7f00", fill:void 0, hi_fill:void 0};
+    var c = this;
     goog.array.forEach(a, function(a) {
       var b = new annotorious.hypo.ImagePlugin(a, c.annotator);
       c.options.read_only && b.disableSelection();

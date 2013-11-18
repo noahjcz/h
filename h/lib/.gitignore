@@ -1,5 +1,7 @@
 angular*.min.js
 annotator*.min.js
+annotorious*.min.js
+annotorious*.min.css
 jquery*min.js
 d3.min.js
 dom_text.min.js

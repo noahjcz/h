@@ -22,7 +22,10 @@
           <div class="excerpt"
                ng-hide="collapsed">
             <imagequote target="{{annotation.target}}"
-                        scale="true"/>
+                        strategy="propotional_limit"
+                        scalesmaller="true"
+                        heightlimit="75"
+                        widthlimit="371"/>
           </div>
 
           <!-- Excerpts -->

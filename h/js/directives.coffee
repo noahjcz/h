@@ -413,7 +413,43 @@ imagequote = [ ->
         r.resolve this, shapeSelector, container, scale
       r
 
-    scope.cropImage = (image, shapeSelector, container, scale) ->
+    scope.applyScalingStrategy = (width, height) ->
+      newheight = height
+      newwidth = width
+      switch scope.strategy
+        when 'propotional_limit'
+          if scope.widthlimit? > 0
+            ratiox = scope.widthlimit / width
+          if scope.heightlimit? > 0
+            ratioy = scope.heightlimit / height
+
+          if ratiox? and ratioy? then ratio = Math.min ratiox, ratioy
+          else if ratiox? then ratio = ratiox
+          else if ratioy? then ratio = ratioy
+          else break
+
+          if not scope.scalesmaller? and ratio > 1 then ratio = 1
+
+          newwidth = width * ratio
+          newheight = height * ratio
+        when 'unpropotional_limit'
+            if scope.widthlimit? > 0
+              ratiox = scope.widthlimit / width
+            if scope.heightlimit? > 0
+              ratioy = scope.heightlimit / height
+
+            if not scope.scalesmaller? and ratiox > 1 then ratiox = 1
+            if not scope.scalesmaller? and ratioy > 1 then ratioy = 1
+
+            if ratiox? then newwidth = width * ratiox
+            if ratioy? then newheight = height * ratioy
+            break
+        else
+          break
+
+      [newwidth, newheight]
+
+    scope.cropImage = (image, shapeSelector, container) ->
       unless shapeSelector? then return
       if shapeSelector.shapeType is 'rect'
         # Convert fraction to pixel
@@ -421,20 +457,18 @@ imagequote = [ ->
         height = shapeSelector.geometry.height * image.height
         x = shapeSelector.geometry.x * image.width
         y = shapeSelector.geometry.y * image.height
-        if scale
-          ratio = if 75/width < 75/height then 75/width else 75/height
-        else ratio = 1
+        [newwidth, newheight]  = scope.applyScalingStrategy width, height
 
         imgCanvas = document.createElement "canvas"
         imgContext = imgCanvas.getContext "2d"
 
-        imgCanvas.width = width * ratio
-        imgCanvas.height = height * ratio
-        imgContext.drawImage image, x, y, width, height, 0, 0, width * ratio, height * ratio
+        imgCanvas.width = newwidth
+        imgCanvas.height = newheight
+        imgContext.drawImage image, x, y, width, height, 0, 0, newwidth, newheight
         container.append imgCanvas
 
-    scope.createCroppedCanvas = (img_url, shapeSelector, container, scale = false) ->
-      scope.loadPicture(img_url, shapeSelector, container, scale).done(scope.cropImage)
+    scope.createCroppedCanvas = (img_url, shapeSelector, container) ->
+      scope.loadPicture(img_url, shapeSelector, container).done(scope.cropImage)
 
     scope.$watch 'target', (target) ->
       if scope.rendered then return
@@ -451,12 +485,15 @@ imagequote = [ ->
 
       if shapeSelector?
         scope.rendered = true
-        scope.createCroppedCanvas image_src, shapeSelector, elem, scope.scale
+        scope.createCroppedCanvas image_src, shapeSelector, elem
 
   require: '?ngModel'
   restrict: 'E'
   scope:
-    scale: '@'
+    strategy: '@'
+    scalesmaller: '@'
+    heightlimit: '@'
+    widthlimit: '@'
     target: '@'
 ]
 

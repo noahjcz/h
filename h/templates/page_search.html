@@ -14,8 +14,11 @@
 
             <div class="excerpt"
                  ng-hide="collapsed">
-              <imagequote target="{{thread.message.target}}"
-                          scale="true"/>
+              <imagequote target="{{annotation.target}}"
+                          strategy="propotional_limit"
+                          scalesmaller="true"
+                          heightlimit="75"
+                          widthlimit="371"/>
             </div>
             <!-- Excerpts -->
             <div class="excerpt"

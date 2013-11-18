@@ -164,6 +164,13 @@ angular_sanitize = Uglify(
     output='lib/angular-sanitize.min.js'
 )
 
+# Annotorious
+annotorious = Bundle(
+    Uglify('h:lib/annotorious.hypo.js', output='lib/annotorious.min.js'),
+    Uglify('h:lib/fancy_box_selector.js', output='lib/annotorious-fancy_box.min.js'),
+    CSS('h:lib/annotorious.css', output='lib/annotorious.min.css')
+)
+
 # jQuery
 jquery = Uglify('lib/jquery-1.10.2.js', output='lib/jquery-1.10.2.min.js')
 jquery_mousewheel = Uglify(
@@ -243,6 +250,7 @@ app = Bundle(
     annotator_store,
     annotator_threading,
     annotator_document,
+    annotorious,
     jschannel,
     jwz,
     pagedown,
@@ -309,6 +317,7 @@ inject = Bundle(
     annotator_image,
     annotator_pdf,
     annotator_toolbar,
+    annotorious,
     Uglify(
         Coffee('js/guest.coffee', output='js/guest.js'),
         Coffee('js/host.coffee', output='js/host.js'),

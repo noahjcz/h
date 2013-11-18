@@ -37,6 +37,7 @@ class Annotator.Guest extends Annotator
     TextAnchors: {}
     FuzzyTextAnchors: {}
     PDF: {}
+    ImageAnchors: {}
     Document: {}
 
   # Internal state

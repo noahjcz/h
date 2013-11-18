@@ -125,6 +125,10 @@ annotator_fuzzytext = Uglify(
     'lib/annotator.fuzzytextanchors.js',
     output='lib/annotator.fuzzytextanchors.min.js'
 )
+annotator_image = Uglify(
+    'lib/annotator.imageanchors.js',
+    output='lib/annotator.imageanchors.min.js'
+)
 annotator_pdf = Uglify(
     Coffee('lib/page_text_mapper_core.coffee', output='js/page_text_mapper_core.js'),    
     'lib/annotator.pdf.js',
@@ -301,6 +305,7 @@ inject = Bundle(
     annotator_dtm,
     annotator_textanchors,
     annotator_fuzzytext,
+    annotator_image,
     annotator_pdf,
     annotator_toolbar,
     Uglify(

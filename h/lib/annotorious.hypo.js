@@ -6965,8 +6965,6 @@ annotorious.plugins.selection.RectDragSelector.prototype.getViewportBounds = fun
 };
 annotorious.plugins.selection.RectDragSelector.prototype.drawShape = function(a, b, c) {
   var d, e, f;
-  console.log("drawShape");
-  console.log(b);
   b.type == annotorious.shape.ShapeType.RECTANGLE && ("style" in b ? c ? (e = b.style.hi_fill, d = b.style.hi_stroke, f = b.style.hi_outline) : (e = b.style.fill, d = b.style.stroke, f = b.style.outline) : (c ? (e = this._HI_FILL, d = this._HI_STROKE) : (e = this._FILL, d = this._STROKE), f = this._OUTLINE), a.lineWidth = c ? 1.2 : 1, b = b.geometry, f && (a.strokeStyle = f, a.strokeRect(b.x + 0.5, b.y + 0.5, b.width + 1, b.height + 1)), d && (a.strokeStyle = d, a.strokeRect(b.x + 1.5, b.y + 1.5, 
   b.width - 1, b.height - 1)), e && (a.fillStyle = e, a.fillRect(b.x + 1.5, b.y + 1.5, b.width - 1, b.height - 1)))
 };
@@ -7260,8 +7258,6 @@ annotorious.hypo.ImagePlugin = function(a, b) {
     d._guest.showViewer(b)
   });
   annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
-    console.log("adding annotation");
-    console.log(a);
     this._imageAnnotator.addAnnotation(a);
     this._annotations[a.id] = a
   };
@@ -7294,8 +7290,6 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
     "rect" == a.shapeType ? e = new annotorious.shape.geom.Rectangle(a.geometry.x, a.geometry.y, a.geometry.width, a.geometry.height) : "polygon" == a.shapeType && (e = new annotorious.shape.geom.Polygon(a.geometry.points));
     e = new annotorious.shape.Shape(a.shapeType, e, annotorious.shape.Units.FRACTION);
     e.style = this.defaultStyle;
-    console.log("shape");
-    console.log(e);
     d.shapes = [e];
     this.handlers[d.source].addAnnotation(d)
   };
@@ -7334,7 +7328,6 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
     }, [])
   };
   a.prototype.setActiveHighlights = function(a, c) {
-    console.log("setActiveHighlights");
     for(var d in this.handlers) {
       var e = this.handlers[d], f = !1, g;
       for(g in e._annotations) {
@@ -7361,7 +7354,6 @@ window.Annotator.Plugin.AnnotoriousImagePlugin = function() {
     return d
   };
   a.prototype.switchHighlightAll = function(a) {
-    console.log("switchHighlightAll");
     for(var c in this.handlers) {
       var d = this.handlers[c], e;
       for(e in d._annotations) {

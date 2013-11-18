@@ -7250,24 +7250,15 @@ annotorious.hypo.ImagePlugin = function(a, b) {
   goog.events.listen(e, annotorious.events.ui.EventType.DOWN, function(a) {
     var a = annotorious.events.ui.sanitizeCoordinates(a, e), a = d._imageAnnotator.getAnnotationsAt(a.x, a.y), b = [], c;
     for(c in a) {
-      b.push(a[c].hypoAnnotation)
+      b.push(a[c].highlight.annotation)
     }
     d._imagePlugin.showAnnotations(b)
   });
   annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
-    this._imageAnnotator.addAnnotation(a);
-    this._annotations[a.id] = a
-  };
-  annotorious.hypo.ImagePlugin.prototype.updateAnnotation = function(a, b) {
-    if(a in this._annotations) {
-      var c = this._annotations[a];
-      "id" in b && a != b.id && (this._annotations[b.id] = c, delete this._annotations[a]);
-      c.text = b.text;
-      c.hypoAnnotation = b
-    }
+    this._imageAnnotator.addAnnotation(a)
   };
   annotorious.hypo.ImagePlugin.prototype.deleteAnnotation = function(a) {
-    a in this._annotations && (this._imageAnnotator.removeAnnotation(this._annotations[a]), delete this._annotations[a])
+    this._imageAnnotator.removeAnnotation(a)
   };
   annotorious.hypo.ImagePlugin.prototype.disableSelection = function() {
     this._imageAnnotator._selectionEnabled = !1;
@@ -7281,8 +7272,6 @@ window.Annotorious.ImagePlugin = function() {
     this.options = c;
     this.imagePlugin = d;
     this.handlers = {};
-    this.defaultStyle = {outline:"#000000", hi_outline:"#000000", stroke:"#ffffff", hi_stroke:"#fff000", fill:void 0, hi_fill:void 0};
-    this.highlightStyle = {outline:"#000000", hi_outline:"#000000", stroke:"#fff000", hi_stroke:"#ff7f00", fill:void 0, hi_fill:void 0};
     var f = this;
     goog.array.forEach(e, function(a) {
       var b = new annotorious.hypo.ImagePlugin(a, f.imagePlugin);
@@ -7290,6 +7279,13 @@ window.Annotorious.ImagePlugin = function() {
       f.handlers[a.src] = b
     })
   }
+  a.prototype.addAnnotationFromHighlight = function(a, c, d, e, f) {
+    c = null;
+    "rect" == d ? c = new annotorious.shape.geom.Rectangle(e.x, e.y, e.width, e.height) : "polygon" == d && (c = new annotorious.shape.geom.Polygon(e.points));
+    d = new annotorious.shape.Shape(d, c, annotorious.shape.Units.FRACTION, f);
+    a.shapes = [d];
+    this.handlers[a.source].addAnnotation(a)
+  };
   a.prototype.addAnnotation = function(a, c) {
     var d = {text:c.text, id:c.id, hypoAnnotation:c};
     d.source = a.source;
@@ -7301,8 +7297,7 @@ window.Annotorious.ImagePlugin = function() {
     this.handlers[d.source].addAnnotation(d)
   };
   a.prototype.deleteAnnotation = function(a) {
-    var c = this.handlers[a.target[0].selector[0].source], d = null, d = "id" in a ? a.id : a.temporaryImageID;
-    c.deleteAnnotation(d, a)
+    this.handlers[a.source].deleteAnnotation(a)
   };
   a.prototype.updateAnnotation = function(a) {
     var c = this.handlers[a.target[0].selector[0].source], d = null;

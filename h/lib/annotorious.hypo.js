@@ -7236,9 +7236,8 @@ annotorious.hypo.ImagePlugin = function(a, b) {
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_COMPLETED, this._imageAnnotator._eventBroker._handlers[annotorious.events.EventType.SELECTION_COMPLETED][0]);
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_CANCELED, c);
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_COMPLETED, function(a) {
-    var b = d._imageAnnotator._image.src + "#" + (new Date).toString(), c = {src:d._imageAnnotator._image.src, shapes:[a.shape], hypoAnnotation:{target:[{selector:[{type:"ShapeSelector", shapeType:a.shape.type, geometry:a.shape.geometry, source:d._imageAnnotator._image.src}]}]}};
-    d._annotations[b] = c;
-    d._imageAnnotator.addAnnotation(c);
+    var b = d._imageAnnotator._image.src + "#" + (new Date).toString();
+    d._imageAnnotator.addAnnotation({src:d._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b});
     d._imageAnnotator.stopSelection();
     d._imagePlugin.annotate(d._imageAnnotator._image.src, a.shape.type, a.shape.geometry, b)
   });
@@ -7279,10 +7278,30 @@ window.Annotorious.ImagePlugin = function() {
       f.handlers[a.src] = b
     })
   }
+  a.prototype._createShapeForAnnotation = function(a, c, d) {
+    var e = null;
+    "rect" == a ? e = new annotorious.shape.geom.Rectangle(c.x, c.y, c.width, c.height) : "polygon" == a && (e = new annotorious.shape.geom.Polygon(c.points));
+    return new annotorious.shape.Shape(a, e, annotorious.shape.Units.FRACTION, d)
+  };
+  a.prototype.updateAnnotationAfterCreatingAnnotatorHighlight = function(a) {
+    var c = this.handlers[a.source]._imageAnnotator._viewer, d = null, e;
+    for(e in c._annotations) {
+      var f = c._annotations[e];
+      if(f.temporaryID == a.temporaryID) {
+        d = f;
+        f.text = a.text;
+        f.id = a.id;
+        f.temporaryID = void 0;
+        f.source = a.source;
+        f.highlight = a.highlight;
+        break
+      }
+    }
+    return d
+  };
   a.prototype.addAnnotationFromHighlight = function(a, c, d, e, f) {
-    var c = this.handlers[a.source], g = null;
-    "rect" == d ? g = new annotorious.shape.geom.Rectangle(e.x, e.y, e.width, e.height) : "polygon" == d && (g = new annotorious.shape.geom.Polygon(e.points));
-    d = new annotorious.shape.Shape(d, g, annotorious.shape.Units.FRACTION, f);
+    c = this.handlers[a.source];
+    d = this._createShapeForAnnotation(d, e, f);
     a.shapes = [d];
     c.addAnnotation(a)
   };

@@ -21,11 +21,20 @@
              ng-show="$parent.annotation"
              />
 
+          <div class="excerpt"
+               ng-hide="collapsed">
+            <imagequote target="{{annotation.target}}"
+                        strategy="propotional_limit"
+                        scalesmaller="true"
+                        heightlimit="75"
+                        widthlimit="371"/>
+          </div>
+
           <!-- Excerpts -->
           <div class="excerpt"
                ng-repeat="target in annotation.target"
                ng-hide="collapsed">
-            <blockquote ng-bind="target.quote" ng-hide="target.showDiff" />
+            <blockquote ng-bind="target.quote" ng-hide="target.showDiff || !target.quote" />
             <blockquote ng-bind-html="target.trustedDiffHTML" ng-show="target.showDiff" />
             <div class="small pull-right" ng-show="target.diffHTML">
               <input type="checkbox" ng-model="target.showDiff" ng-click="$event.stopPropagation()"> Show differences</input>

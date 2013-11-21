@@ -394,6 +394,98 @@ whenscrolled = ['$window', ($window) ->
         scope.$apply attr.whenscrolled
 ]
 
+imagequote = [ ->
+  link: (scope, elem, attr, ctrl) ->
+    scope.loadPicture = (img_url, shapeSelector, container, scale) ->
+      r = $.Deferred()
+      $("<img/>").attr("src", img_url).load ->
+        r.resolve this, shapeSelector, container, scale
+      r
+
+    scope.applyScalingStrategy = (width, height) ->
+      newheight = height
+      newwidth = width
+      switch scope.strategy
+        when 'propotional_limit'
+          if scope.widthlimit? > 0
+            ratiox = scope.widthlimit / width
+          if scope.heightlimit? > 0
+            ratioy = scope.heightlimit / height
+
+          if ratiox? and ratioy? then ratio = Math.min ratiox, ratioy
+          else if ratiox? then ratio = ratiox
+          else if ratioy? then ratio = ratioy
+          else break
+
+          if not scope.scalesmaller? and ratio > 1 then ratio = 1
+
+          newwidth = width * ratio
+          newheight = height * ratio
+        when 'unpropotional_limit'
+            if scope.widthlimit? > 0
+              ratiox = scope.widthlimit / width
+            if scope.heightlimit? > 0
+              ratioy = scope.heightlimit / height
+
+            if not scope.scalesmaller? and ratiox > 1 then ratiox = 1
+            if not scope.scalesmaller? and ratioy > 1 then ratioy = 1
+
+            if ratiox? then newwidth = width * ratiox
+            if ratioy? then newheight = height * ratioy
+            break
+        else
+          break
+
+      [newwidth, newheight]
+
+    scope.cropImage = (image, shapeSelector, container) ->
+      unless shapeSelector? then return
+      if shapeSelector.shapeType is 'rect'
+        # Convert fraction to pixel
+        width = shapeSelector.geometry.width * image.width
+        height = shapeSelector.geometry.height * image.height
+        x = shapeSelector.geometry.x * image.width
+        y = shapeSelector.geometry.y * image.height
+        [newwidth, newheight]  = scope.applyScalingStrategy width, height
+
+        imgCanvas = document.createElement "canvas"
+        imgContext = imgCanvas.getContext "2d"
+
+        imgCanvas.width = newwidth
+        imgCanvas.height = newheight
+        imgContext.drawImage image, x, y, width, height, 0, 0, newwidth, newheight
+        container.append imgCanvas
+
+    scope.createCroppedCanvas = (img_url, shapeSelector, container) ->
+      scope.loadPicture(img_url, shapeSelector, container).done(scope.cropImage)
+
+    scope.$watch 'target', (target) ->
+      if scope.rendered then return
+      target = JSON.parse target
+      shapeSelector = null
+      image_src = null
+      if target?
+        for target in target
+          for selector in target.selector
+            if selector.type is 'ShapeSelector'
+              shapeSelector = selector
+              image_src = selector.source
+              break
+
+      if shapeSelector?
+        scope.rendered = true
+        scope.createCroppedCanvas image_src, shapeSelector, elem
+
+  require: '?ngModel'
+  restrict: 'E'
+  scope:
+    strategy: '@'
+    scalesmaller: '@'
+    heightlimit: '@'
+    widthlimit: '@'
+    target: '@'
+]
+
 angular.module('h.directives', ['ngSanitize'])
   .directive('authentication', authentication)
   .directive('fuzzytime', fuzzytime)
@@ -411,3 +503,4 @@ angular.module('h.directives', ['ngSanitize'])
   .directive('notification', notification)
   .directive('streamviewer', streamviewer)
   .directive('whenscrolled', whenscrolled)
+  .directive('imagequote', imagequote)

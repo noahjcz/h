@@ -269,14 +269,16 @@ class Annotator.Guest extends Annotator
 
   # When clicking on a highlight in highlighting mode,
   # set @noBack to true to prevent the sidebar from closing
-  onAnchorMousedown: (annotations) =>
-    if (@tool is 'highlight') or @visibleHighlights
-      @noBack = true
+  onAnchorMousedown: (annotations, highlightType) =>
+    if highlightType is 'ImageHighlight' then @noBack = true
+    else
+      if (@tool is 'highlight') or @visibleHighlights then @noBack = true
 
   # When clicking on a highlight in highlighting mode,
   # tell the sidebar to bring up the viewer for the relevant annotations
-  onAnchorClick: (annotations) =>
-    return unless (@tool is 'highlight') or @visibleHighlights and @noBack
+  onAnchorClick: (annotations, highlightType) =>
+    if highlightType is not 'ImageHighlight'
+      return unless (@tool is 'highlight') or @visibleHighlights and @noBack
 
     # Tell sidebar to show the viewer for these annotations
     this.showViewer annotations

@@ -1,6 +1,6 @@
 class ImageHighlight extends Annotator.Highlight
   # Create annotorious shape styles
-  @invisibleStyle =
+  invisibleStyle:
     outline: undefined
     hi_outline: undefined
     stroke: undefined
@@ -8,7 +8,7 @@ class ImageHighlight extends Annotator.Highlight
     fill: undefined
     hi_fill: undefined
 
-  @defaultStyle =
+  defaultStyle:
     outline: '#000000'
     hi_outline: '#000000'
     stroke: '#ffffff'
@@ -16,7 +16,7 @@ class ImageHighlight extends Annotator.Highlight
     fill: undefined
     hi_fill: undefined
 
-  @highlightStyle =
+  highlightStyle:
     outline: '#000000'
     hi_outline: '#000000'
     stroke: '#fff000'
@@ -27,12 +27,14 @@ class ImageHighlight extends Annotator.Highlight
   constructor: (anchor, pageIndex, image, shape, geometry, @annotorious) ->
     super anchor, pageIndex
 
+    @alwaysOnMode = false
+    @active = false
     # using the image, shape, geometry arguments.
     @annotoriousAnnotation =
       text: @annotation.text
       id: @annotation.id
       temporaryID: @annotation.temporaryImageID
-      source: image.source
+      source: image.src
       highlight: this
 
     @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
@@ -65,12 +67,9 @@ class ImageHighlight extends Annotator.Highlight
 
   # Mark/unmark this hl as active
   setActive: (value) ->
-    if value
-      # TODO: mark it as an active HL
-    else
-      # TODO: unmark it as an active HL
-
-
+    # TODO: Consider alwaysonannotation
+    @active = value
+    @annotorious.drawAnnotationHighlight @annotoriousAnnotation
 
   _getDOMElements: ->
     # TODO: do we have actual HTML elements for the individual highlights over

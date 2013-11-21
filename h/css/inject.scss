@@ -391,6 +391,18 @@ $baseFontSize: 14px;
   font-size: $baseFontSize * .86;
 }
 
+// Annotorious overrides
+.annotorious-hint-icon {
+  display: none;
+}
+
+.annotorious-item-unfocus {
+  opacity: 1;
+}
+
+.annotator-highlights-always-on .annotorious-item-unfocus {
+    opacity: 1;
+}
 
 /*
   Mobile layout

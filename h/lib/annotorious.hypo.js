@@ -765,13 +765,13 @@ goog.string.getRandomString = function() {
 };
 goog.string.compareVersions = function(a, b) {
   for(var c = 0, d = goog.string.trim(String(a)).split("."), e = goog.string.trim(String(b)).split("."), f = Math.max(d.length, e.length), g = 0;0 == c && g < f;g++) {
-    var h = d[g] || "", i = e[g] || "", j = RegExp("(\\d*)(\\D*)", "g"), k = RegExp("(\\d*)(\\D*)", "g");
+    var h = d[g] || "", i = e[g] || "", j = RegExp("(\\d*)(\\D*)", "g"), m = RegExp("(\\d*)(\\D*)", "g");
     do {
-      var l = j.exec(h) || ["", "", ""], n = k.exec(i) || ["", "", ""];
-      if(0 == l[0].length && 0 == n[0].length) {
+      var k = j.exec(h) || ["", "", ""], n = m.exec(i) || ["", "", ""];
+      if(0 == k[0].length && 0 == n[0].length) {
         break
       }
-      var c = 0 == l[1].length ? 0 : parseInt(l[1], 10), s = 0 == n[1].length ? 0 : parseInt(n[1], 10), c = goog.string.compareElements_(c, s) || goog.string.compareElements_(0 == l[2].length, 0 == n[2].length) || goog.string.compareElements_(l[2], n[2])
+      var c = 0 == k[1].length ? 0 : parseInt(k[1], 10), u = 0 == n[1].length ? 0 : parseInt(n[1], 10), c = goog.string.compareElements_(c, u) || goog.string.compareElements_(0 == k[2].length, 0 == n[2].length) || goog.string.compareElements_(k[2], n[2])
     }while(0 == c)
   }
   return c
@@ -2581,33 +2581,33 @@ goog.dom.query = function() {
   var b = goog.userAgent.WEBKIT && "BackCompat" == goog.dom.getDocument().compatMode, c = goog.dom.getDocument().firstChild.children ? "children" : "childNodes", d = !1, e = function(a) {
     for(var a = 0 <= ">~+".indexOf(a.slice(-1)) ? a + " * " : a + " ", b = function(b, c) {
       return goog.string.trim(a.slice(b, c))
-    }, c = [], e = -1, f = -1, g = -1, h = -1, i = -1, j = -1, k = -1, y = "", t = "", C, q = 0, n = a.length, m = null, l = null, p = function() {
-      0 <= j && (m.id = b(j, q).replace(/\\/g, ""), j = -1);
-      if(0 <= k) {
-        var a = k == q ? null : b(k, q);
-        0 > ">~+".indexOf(a) ? m.tag = a : m.oper = a;
-        k = -1
+    }, c = [], e = -1, f = -1, g = -1, h = -1, i = -1, j = -1, m = -1, t = "", r = "", A, p = 0, n = a.length, l = null, k = null, q = function() {
+      0 <= j && (l.id = b(j, p).replace(/\\/g, ""), j = -1);
+      if(0 <= m) {
+        var a = m == p ? null : b(m, p);
+        0 > ">~+".indexOf(a) ? l.tag = a : l.oper = a;
+        m = -1
       }
-      0 <= i && (m.classes.push(b(i + 1, q).replace(/\\/g, "")), i = -1)
-    };y = t, t = a.charAt(q), q < n;q++) {
-      if("\\" != y) {
-        if(m || (C = q, m = {query:null, pseudos:[], attrs:[], classes:[], tag:null, oper:null, id:null, getTag:function() {
+      0 <= i && (l.classes.push(b(i + 1, p).replace(/\\/g, "")), i = -1)
+    };t = r, r = a.charAt(p), p < n;p++) {
+      if("\\" != t) {
+        if(l || (A = p, l = {query:null, pseudos:[], attrs:[], classes:[], tag:null, oper:null, id:null, getTag:function() {
           return d ? this.otag : this.tag
-        }}, k = q), 0 <= e) {
-          if("]" == t) {
-            l.attr ? l.matchFor = b(g || e + 1, q) : l.attr = b(e + 1, q);
-            if((e = l.matchFor) && ('"' == e.charAt(0) || "'" == e.charAt(0))) {
-              l.matchFor = e.slice(1, -1)
+        }}, m = p), 0 <= e) {
+          if("]" == r) {
+            k.attr ? k.matchFor = b(g || e + 1, p) : k.attr = b(e + 1, p);
+            if((e = k.matchFor) && ('"' == e.charAt(0) || "'" == e.charAt(0))) {
+              k.matchFor = e.slice(1, -1)
             }
-            m.attrs.push(l);
-            l = null;
+            l.attrs.push(k);
+            k = null;
             e = g = -1
           }else {
-            "=" == t && (g = 0 <= "|~^$*".indexOf(y) ? y : "", l.type = g + t, l.attr = b(e + 1, q - g.length), g = q + 1)
+            "=" == r && (g = 0 <= "|~^$*".indexOf(t) ? t : "", k.type = g + r, k.attr = b(e + 1, p - g.length), g = p + 1)
           }
         }else {
-          0 <= f ? ")" == t && (0 <= h && (l.value = b(f + 1, q)), h = f = -1) : "#" == t ? (p(), j = q + 1) : "." == t ? (p(), i = q) : ":" == t ? (p(), h = q) : "[" == t ? (p(), e = q, l = {}) : "(" == t ? (0 <= h && (l = {name:b(h + 1, q), value:null}, m.pseudos.push(l)), f = q) : " " == t && y != t && (p(), 0 <= h && m.pseudos.push({name:b(h + 1, q)}), m.loops = m.pseudos.length || m.attrs.length || m.classes.length, m.oquery = m.query = b(C, q), m.otag = m.tag = m.oper ? null : m.tag || "*", 
-          m.tag && (m.tag = m.tag.toUpperCase()), c.length && c[c.length - 1].oper && (m.infixOper = c.pop(), m.query = m.infixOper.query + " " + m.query), c.push(m), m = null)
+          0 <= f ? ")" == r && (0 <= h && (k.value = b(f + 1, p)), h = f = -1) : "#" == r ? (q(), j = p + 1) : "." == r ? (q(), i = p) : ":" == r ? (q(), h = p) : "[" == r ? (q(), e = p, k = {}) : "(" == r ? (0 <= h && (k = {name:b(h + 1, p), value:null}, l.pseudos.push(k)), f = p) : " " == r && t != r && (q(), 0 <= h && l.pseudos.push({name:b(h + 1, p)}), l.loops = l.pseudos.length || l.attrs.length || l.classes.length, l.oquery = l.query = b(A, p), l.otag = l.tag = l.oper ? null : l.tag || "*", 
+          l.tag && (l.tag = l.tag.toUpperCase()), c.length && c[c.length - 1].oper && (l.infixOper = c.pop(), l.query = l.infixOper.query + " " + l.query), c.push(l), l = null)
         }
       }
     }
@@ -2648,21 +2648,21 @@ goog.dom.query = function() {
     return function(c) {
       return h(c, a) == b
     }
-  }}, j = "undefined" == typeof goog.dom.getDocument().firstChild.nextElementSibling, k = !j ? "nextElementSibling" : "nextSibling", l = !j ? "previousElementSibling" : "previousSibling", n = j ? g : goog.functions.TRUE, s = function(a) {
-    for(;a = a[l];) {
-      if(n(a)) {
-        return!1
-      }
-    }
-    return!0
-  }, r = function(a) {
+  }}, j = "undefined" == typeof goog.dom.getDocument().firstChild.nextElementSibling, m = !j ? "nextElementSibling" : "nextSibling", k = !j ? "previousElementSibling" : "previousSibling", n = j ? g : goog.functions.TRUE, u = function(a) {
     for(;a = a[k];) {
       if(n(a)) {
         return!1
       }
     }
     return!0
-  }, p = function(a) {
+  }, B = function(a) {
+    for(;a = a[m];) {
+      if(n(a)) {
+        return!1
+      }
+    }
+    return!0
+  }, v = function(a) {
     var b = a.parentNode, d = 0, e = b[c], f = a._i || -1, g = b._l || -1;
     if(!e) {
       return-1
@@ -2673,25 +2673,25 @@ goog.dom.query = function() {
     }
     b._l = e;
     f = -1;
-    for(b = b.firstElementChild || b.firstChild;b;b = b[k]) {
+    for(b = b.firstElementChild || b.firstChild;b;b = b[m]) {
       n(b) && (b._i = ++d, a === b && (f = d))
     }
     return f
-  }, u = function(a) {
-    return!(p(a) % 2)
-  }, z = function(a) {
-    return p(a) % 2
+  }, M = function(a) {
+    return!(v(a) % 2)
+  }, N = function(a) {
+    return v(a) % 2
   }, x = {checked:function() {
     return function(a) {
       return a.checked || a.attributes.checked
     }
   }, "first-child":function() {
-    return s
+    return u
   }, "last-child":function() {
-    return r
+    return B
   }, "only-child":function() {
     return function(a) {
-      return!s(a) || !r(a) ? !1 : !0
+      return!u(a) || !B(a) ? !1 : !0
     }
   }, empty:function() {
     return function(a) {
@@ -2715,23 +2715,23 @@ goog.dom.query = function() {
     var c = e(b)[0], d = {el:1};
     "*" != c.tag && (d.tag = 1);
     c.classes.length || (d.classes = 1);
-    var f = w(c, d);
+    var f = s(c, d);
     return function(a) {
       return!f(a)
     }
   }, "nth-child":function(a, b) {
     if("odd" == b) {
-      return z
+      return N
     }
     if("even" == b) {
-      return u
+      return M
     }
     if(-1 != b.indexOf("n")) {
       var c = b.split("n", 2), d = c[0] ? "-" == c[0] ? -1 : parseInt(c[0], 10) : 1, e = c[1] ? parseInt(c[1], 10) : 0, f = 0, g = -1;
       0 < d ? 0 > e ? e = e % d && d + e % d : 0 < e && (e >= d && (f = e - e % d), e %= d) : 0 > d && (d *= -1, 0 < e && (g = e, e %= d));
       if(0 < d) {
         return function(a) {
-          a = p(a);
+          a = v(a);
           return a >= f && (0 > g || a <= g) && a % d == e
         }
       }
@@ -2739,9 +2739,9 @@ goog.dom.query = function() {
     }
     var h = parseInt(b, 10);
     return function(a) {
-      return p(a) == h
+      return v(a) == h
     }
-  }}, L = goog.userAgent.IE ? function(a) {
+  }}, O = goog.userAgent.IE ? function(a) {
     var b = a.toLowerCase();
     "class" == b && (a = "className");
     return function(c) {
@@ -2751,7 +2751,7 @@ goog.dom.query = function() {
     return function(b) {
       return b && b.getAttribute && b.hasAttribute(a)
     }
-  }, w = function(a, b) {
+  }, s = function(a, b) {
     if(!a) {
       return goog.functions.TRUE
     }
@@ -2773,7 +2773,7 @@ goog.dom.query = function() {
     });
     b.attrs || goog.array.forEach(a.attrs, function(a) {
       var b, d = a.attr;
-      a.type && i[a.type] ? b = i[a.type](d, a.matchFor) : d.length && (b = L(d));
+      a.type && i[a.type] ? b = i[a.type](d, a.matchFor) : d.length && (b = O(d));
       b && (c = f(c, b))
     });
     b.id || a.id && (c = f(c, function(b) {
@@ -2781,18 +2781,18 @@ goog.dom.query = function() {
     }));
     !c && !("default" in b) && (c = goog.functions.TRUE);
     return c
-  }, D = {}, E = function(d) {
-    var e = D[d.query];
+  }, C = {}, D = function(d) {
+    var e = C[d.query];
     if(e) {
       return e
     }
-    var f = d.infixOper, f = f ? f.oper : "", h = w(d, {el:1}), i = "*" == d.tag, l = goog.dom.getDocument().getElementsByClassName;
+    var f = d.infixOper, f = f ? f.oper : "", h = s(d, {el:1}), i = "*" == d.tag, k = goog.dom.getDocument().getElementsByClassName;
     if(f) {
-      if(l = {el:1}, i && (l.tag = 1), h = w(d, l), "+" == f) {
-        var p = h, e = function(a, b, c) {
-          for(;a = a[k];) {
+      if(k = {el:1}, i && (k.tag = 1), h = s(d, k), "+" == f) {
+        var q = h, e = function(a, b, c) {
+          for(;a = a[m];) {
             if(!j || g(a)) {
-              (!c || B(a, c)) && p(a) && b.push(a);
+              (!c || y(a, c)) && q(a) && b.push(a);
               break
             }
           }
@@ -2800,23 +2800,23 @@ goog.dom.query = function() {
         }
       }else {
         if("~" == f) {
-          var r = h, e = function(a, b, c) {
-            for(a = a[k];a;) {
+          var K = h, e = function(a, b, c) {
+            for(a = a[m];a;) {
               if(n(a)) {
-                if(c && !B(a, c)) {
+                if(c && !y(a, c)) {
                   break
                 }
-                r(a) && b.push(a)
+                K(a) && b.push(a)
               }
-              a = a[k]
+              a = a[m]
             }
             return b
           }
         }else {
           if(">" == f) {
-            var A = h, A = A || goog.functions.TRUE, e = function(a, b, d) {
+            var w = h, w = w || goog.functions.TRUE, e = function(a, b, d) {
               for(var e = 0, f = a[c];a = f[e++];) {
-                n(a) && ((!d || B(a, d)) && A(a, e)) && b.push(a)
+                n(a) && ((!d || y(a, d)) && w(a, e)) && b.push(a)
               }
               return b
             }
@@ -2825,7 +2825,7 @@ goog.dom.query = function() {
       }
     }else {
       if(d.id) {
-        h = !d.loops && i ? goog.functions.TRUE : w(d, {el:1, id:1}), e = function(b, c) {
+        h = !d.loops && i ? goog.functions.TRUE : s(d, {el:1, id:1}), e = function(b, c) {
           var e = goog.dom.getDomHelper(b).getElement(d.id);
           if(e && h(e)) {
             if(9 == b.nodeType) {
@@ -2840,9 +2840,9 @@ goog.dom.query = function() {
           }
         }
       }else {
-        if(l && /\{\s*\[native code\]\s*\}/.test(String(l)) && d.classes.length && !b) {
-          var h = w(d, {el:1, classes:1, id:1}), s = d.classes.join(" "), e = function(b, c) {
-            for(var d = a(0, c), e, f = 0, g = b.getElementsByClassName(s);e = g[f++];) {
+        if(k && /\{\s*\[native code\]\s*\}/.test(String(k)) && d.classes.length && !b) {
+          var h = s(d, {el:1, classes:1, id:1}), L = d.classes.join(" "), e = function(b, c) {
+            for(var d = a(0, c), e, f = 0, g = b.getElementsByClassName(L);e = g[f++];) {
               h(e, b) && d.push(e)
             }
             return d
@@ -2853,7 +2853,7 @@ goog.dom.query = function() {
               e.push(f)
             }
             return e
-          } : (h = w(d, {el:1, tag:1, id:1}), e = function(b, c) {
+          } : (h = s(d, {el:1, tag:1, id:1}), e = function(b, c) {
             for(var e = a(0, c), f, g = 0, i = b.getElementsByTagName(d.getTag());f = i[g++];) {
               h(f, b) && e.push(f)
             }
@@ -2862,11 +2862,11 @@ goog.dom.query = function() {
         }
       }
     }
-    return D[d.query] = e
-  }, F = {}, G = {}, H = function(b) {
+    return C[d.query] = e
+  }, E = {}, F = {}, G = function(b) {
     var c = e(goog.string.trim(b));
     if(1 == c.length) {
-      var d = E(c[0]);
+      var d = D(c[0]);
       return function(a) {
         if(a = d(a, [])) {
           a.nozip = !0
@@ -2880,8 +2880,8 @@ goog.dom.query = function() {
         d = c[i];
         e = b.length - 1;
         0 < e && (g = {}, h.nozip = !0);
-        e = E(d);
-        for(var j = 0;d = b[j];j++) {
+        e = D(d);
+        for(var z = 0;d = b[z];z++) {
           e(d, h, g)
         }
         if(!h.length) {
@@ -2891,21 +2891,21 @@ goog.dom.query = function() {
       }
       return h
     }
-  }, I = !!goog.dom.getDocument().querySelectorAll && (!goog.userAgent.WEBKIT || goog.userAgent.isVersion("526")), J = function(a, c) {
-    if(I) {
-      var d = G[a];
+  }, H = !!goog.dom.getDocument().querySelectorAll && (!goog.userAgent.WEBKIT || goog.userAgent.isVersion("526")), I = function(a, c) {
+    if(H) {
+      var d = F[a];
       if(d && !c) {
         return d
       }
     }
-    if(d = F[a]) {
+    if(d = E[a]) {
       return d
     }
     var d = a.charAt(0), e = -1 == a.indexOf(" ");
     0 <= a.indexOf("#") && e && (c = !0);
-    if(I && !c && -1 == ">~+".indexOf(d) && (!goog.userAgent.IE || -1 == a.indexOf(":")) && !(b && 0 <= a.indexOf(".")) && -1 == a.indexOf(":contains") && -1 == a.indexOf("|=")) {
+    if(H && !c && -1 == ">~+".indexOf(d) && (!goog.userAgent.IE || -1 == a.indexOf(":")) && !(b && 0 <= a.indexOf(".")) && -1 == a.indexOf(":contains") && -1 == a.indexOf("|=")) {
       var f = 0 <= ">~+".indexOf(a.charAt(a.length - 1)) ? a + " *" : a;
-      return G[a] = function(b) {
+      return F[a] = function(b) {
         try {
           if(!(9 == b.nodeType || e)) {
             throw"";
@@ -2914,28 +2914,28 @@ goog.dom.query = function() {
           goog.userAgent.IE ? c.commentStrip = !0 : c.nozip = !0;
           return c
         }catch(d) {
-          return J(a, !0)(b)
+          return I(a, !0)(b)
         }
       }
     }
     var g = a.split(/\s*,\s*/);
-    return F[a] = 2 > g.length ? H(a) : function(a) {
+    return E[a] = 2 > g.length ? G(a) : function(a) {
       for(var b = 0, c = [], d;d = g[b++];) {
-        c = c.concat(H(d)(a))
+        c = c.concat(G(d)(a))
       }
       return c
     }
-  }, v = 0, M = goog.userAgent.IE ? function(a) {
-    return d ? a.getAttribute("_uid") || a.setAttribute("_uid", ++v) || v : a.uniqueID
+  }, q = 0, P = goog.userAgent.IE ? function(a) {
+    return d ? a.getAttribute("_uid") || a.setAttribute("_uid", ++q) || q : a.uniqueID
   } : function(a) {
-    return a._uid || (a._uid = ++v)
-  }, B = function(a, b) {
+    return a._uid || (a._uid = ++q)
+  }, y = function(a, b) {
     if(!b) {
       return 1
     }
-    var c = M(a);
+    var c = P(a);
     return!b[c] ? b[c] = 1 : 0
-  }, N = function(a) {
+  }, Q = function(a) {
     if(a && a.nozip) {
       return a
     }
@@ -2947,9 +2947,9 @@ goog.dom.query = function() {
     if(2 > a.length) {
       return b
     }
-    v++;
+    q++;
     if(goog.userAgent.IE && d) {
-      var c = v + "";
+      var c = q + "";
       a[0].setAttribute("_zipIdx", c);
       for(var e = 1, f;f = a[e];e++) {
         a[e].getAttribute("_zipIdx") != c && b.push(f), f.setAttribute("_zipIdx", c)
@@ -2963,14 +2963,14 @@ goog.dom.query = function() {
         }catch(h) {
         }
       }else {
-        a[0] && (a[0]._zipIdx = v);
+        a[0] && (a[0]._zipIdx = q);
         for(e = 1;f = a[e];e++) {
-          a[e]._zipIdx != v && b.push(f), f._zipIdx = v
+          a[e]._zipIdx != q && b.push(f), f._zipIdx = q
         }
       }
     }
     return b
-  }, K = function(a, b) {
+  }, J = function(a, b) {
     if(!a) {
       return[]
     }
@@ -2985,10 +2985,10 @@ goog.dom.query = function() {
     }
     var b = b || goog.dom.getDocument(), c = b.ownerDocument || b.documentElement;
     d = b.contentType && "application/xml" == b.contentType || goog.userAgent.OPERA && (b.doctype || "[object XMLDocument]" == c.toString()) || !!c && (goog.userAgent.IE ? c.xml : b.xmlVersion || c.xmlVersion);
-    return(c = J(a)(b)) && c.nozip ? c : N(c)
+    return(c = I(a)(b)) && c.nozip ? c : Q(c)
   };
-  K.pseudos = x;
-  return K
+  J.pseudos = x;
+  return J
 }();
 goog.exportSymbol("goog.dom.query", goog.dom.query);
 goog.exportSymbol("goog.dom.query.pseudos", goog.dom.query.pseudos);
@@ -3528,26 +3528,26 @@ goog.events.handleBrowserEvent_ = function(a, b) {
     f = !0;
     try {
       if(h) {
-        for(var k = [], l = j.currentTarget;l;l = l.parentNode) {
-          k.push(l)
+        for(var m = [], k = j.currentTarget;k;k = k.parentNode) {
+          m.push(k)
         }
         g = e[!0];
         g.remaining_ = g.count_;
-        for(var n = k.length - 1;!j.propagationStopped_ && 0 <= n && g.remaining_;n--) {
-          j.currentTarget = k[n], f &= goog.events.fireListeners_(g, k[n], d, !0, j)
+        for(var n = m.length - 1;!j.propagationStopped_ && 0 <= n && g.remaining_;n--) {
+          j.currentTarget = m[n], f &= goog.events.fireListeners_(g, m[n], d, !0, j)
         }
         if(i) {
           g = e[!1];
           g.remaining_ = g.count_;
-          for(n = 0;!j.propagationStopped_ && n < k.length && g.remaining_;n++) {
-            j.currentTarget = k[n], f &= goog.events.fireListeners_(g, k[n], d, !1, j)
+          for(n = 0;!j.propagationStopped_ && n < m.length && g.remaining_;n++) {
+            j.currentTarget = m[n], f &= goog.events.fireListeners_(g, m[n], d, !1, j)
           }
         }
       }else {
         f = goog.events.fireListener(c, j)
       }
     }finally {
-      k && (k.length = 0)
+      m && (m.length = 0)
     }
     return f
   }
@@ -5277,8 +5277,8 @@ goog.ui.ControlRenderer.prototype.decorate = function(a, b) {
   var j = a.getExtraClassNames();
   j && i.push.apply(i, j);
   if(goog.userAgent.IE && !goog.userAgent.isVersion("7")) {
-    var k = this.getAppliedCombinedClassNames_(i);
-    0 < k.length && (i.push.apply(i, k), c = !0)
+    var m = this.getAppliedCombinedClassNames_(i);
+    0 < m.length && (i.push.apply(i, m), c = !0)
   }
   (!g || !h || j || c) && goog.dom.classes.set(b, i.join(" "));
   this.setAriaStates(a, b);
@@ -7283,26 +7283,46 @@ window.Annotorious.ImagePlugin = function() {
     "rect" == a ? e = new annotorious.shape.geom.Rectangle(c.x, c.y, c.width, c.height) : "polygon" == a && (e = new annotorious.shape.geom.Polygon(c.points));
     return new annotorious.shape.Shape(a, e, annotorious.shape.Units.FRACTION, d)
   };
+  a.prototype._calculateHeatmapGeometry = function(a, c) {
+    var d = c.getBoundingClientRect(), e = a.shapes[0];
+    a.heatmapGeometry = {};
+    if("rect" == e.type) {
+      a.heatmapGeometry.y = d.height * e.geometry.y, a.heatmapGeometry.h = d.height * e.geometry.height
+    }else {
+      if("polygon" == e.type) {
+        var f = 1, g = 0, h;
+        for(h in e.geometry.points) {
+          var i = e.geometry.points[h];
+          i.y < f && (f = i.y);
+          i.y > g && (g = i.y)
+        }
+        a.heatmapGeometry.y = d.height * f;
+        a.heatmapGeometry.h = d.height * (g - f)
+      }
+    }
+  };
   a.prototype.updateAnnotationAfterCreatingAnnotatorHighlight = function(a) {
-    var c = this.handlers[a.source]._imageAnnotator._viewer, d = null, e;
-    for(e in c._annotations) {
-      var f = c._annotations[e];
-      if(f.temporaryID == a.temporaryID) {
-        d = f;
-        f.text = a.text;
-        f.id = a.id;
-        f.temporaryID = void 0;
-        f.source = a.source;
-        f.highlight = a.highlight;
+    var c = this.handlers[a.source], d = c._imageAnnotator._viewer, e = null, f;
+    for(f in d._annotations) {
+      var g = d._annotations[f];
+      if(g.temporaryID == a.temporaryID) {
+        e = g;
+        g.text = a.text;
+        g.id = a.id;
+        g.temporaryID = void 0;
+        g.source = a.source;
+        g.highlight = a.highlight;
+        this._calculateHeatmapGeometry(g, c._image);
         break
       }
     }
-    return d
+    return e
   };
   a.prototype.addAnnotationFromHighlight = function(a, c, d, e, f) {
     c = this.handlers[a.source];
     d = this._createShapeForAnnotation(d, e, f);
     a.shapes = [d];
+    this._calculateHeatmapGeometry(a, c._image);
     c.addAnnotation(a)
   };
   a.prototype.deleteAnnotation = function(a) {
@@ -7316,97 +7336,8 @@ window.Annotorious.ImagePlugin = function() {
       a._draw(e, d.highlight.active)
     }
   };
-  a.prototype.addAnnotation = function(a, c) {
-    var d = {text:c.text, id:c.id, hypoAnnotation:c};
-    d.source = a.source;
-    var e = null;
-    "rect" == a.shapeType ? e = new annotorious.shape.geom.Rectangle(a.geometry.x, a.geometry.y, a.geometry.width, a.geometry.height) : "polygon" == a.shapeType && (e = new annotorious.shape.geom.Polygon(a.geometry.points));
-    e = new annotorious.shape.Shape(a.shapeType, e, annotorious.shape.Units.FRACTION);
-    e.style = this.defaultStyle;
-    d.shapes = [e];
-    this.handlers[d.source].addAnnotation(d)
-  };
-  a.prototype.updateAnnotation = function(a) {
-    var c = this.handlers[a.target[0].selector[0].source], d = null;
-    "id" in a ? "temporaryImageID" in a ? (d = a.temporaryImageID, delete a.temporaryImageID) : d = a.id : d = a.temporaryImageID;
-    c.updateAnnotation(d, a)
-  };
-  a.prototype.calculateHeatmapPoints = function(a, c, d, e, f) {
-    var g = this, h = g.annotator.wrapper;
-    return Array.prototype.slice.call(this._el.getElementsByTagName("img")).reduce(function(i, j) {
-      var k = j.getBoundingClientRect(), l = k.top - h.offset().top, n;
-      for(n in g.handlers[j.src]._annotations) {
-        var s = g.handlers[j.src]._annotations[n].hypoAnnotation, r = s.target[0].selector[0], p = 0, u = 0;
-        if("rect" == r.shapeType) {
-          p = k.height * r.geometry.y, u = k.height * r.geometry.height
-        }else {
-          if("polygon" == r.shapeType) {
-            var u = 1, z = 0, x;
-            for(x in r.geometry.points) {
-              p = r.geometry.points[x], p.y < u && (u = p.y), p.y > z && (z = p.y)
-            }
-            p = k.height * u;
-            u = k.height * (z - u)
-          }
-        }
-        r = l + p;
-        p = u;
-        r <= a + c ? s in d || d.push(s) : r + p >= f - a ? s in e || e.push(s) : (i.push([r, 1, s]), i.push([r + p, -1, s]))
-      }
-      return i
-    }, [])
-  };
-  a.prototype.setActiveHighlights = function(a, c) {
-    for(var d in this.handlers) {
-      var e = this.handlers[d], f = !1, g;
-      for(g in e._annotations) {
-        var h = e._annotations[g], i = h.shapes[0];
-        i.units == annotorious.shape.Units.FRACTION && (i = annotorious.shape.transform(i, function(a) {
-          return e._imageAnnotator.fromItemCoordinates(a)
-        }));
-        -1 != a.indexOf(h.hypoAnnotation.$$tag) ? (e._imageAnnotator._viewer._draw(i, !0), f = !0) : e._imageAnnotator._viewer._draw(i, !1)
-      }
-      c || (f ? goog.dom.classes.addRemove(e._imageAnnotator._viewCanvas, "annotorious-item-unfocus", "annotorious-item-focus") : goog.dom.classes.addRemove(e._imageAnnotator._viewCanvas, "annotorious-item-focus", "annotorious-item-unfocus"))
-    }
-  };
-  a.prototype.collectDynamicBucket = function(a, c) {
-    var d = [], e;
-    for(e in this.handlers) {
-      var f = this.handlers[e], g = f._image.getBoundingClientRect(), h = g.top, i;
-      for(i in f._annotations) {
-        var j = f._annotations[i].hypoAnnotation, k = j.target[0].selector[0], l = 0;
-        "rect" == k.shapeType && (l = g.height * k.geometry.y);
-        k = h + l;
-        k >= a && k <= c && d.push(j)
-      }
-    }
-    return d
-  };
-  a.prototype.switchHighlightAll = function(a) {
-    for(var c in this.handlers) {
-      var d = this.handlers[c], e;
-      for(e in d._annotations) {
-        var f = d._annotations[e], g = f.shapes[0];
-        g.units == annotorious.shape.Units.FRACTION && (g = annotorious.shape.transform(g, function(a) {
-          return d._imageAnnotator.fromItemCoordinates(a)
-        }));
-        a ? (g.style = this.highlightStyle, d._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(f.shapes[0])].style = this.highlightStyle) : (g.style = this.defaultStyle, d._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(f.shapes[0])].style = this.defaultStyle);
-        d._imageAnnotator._viewer._draw(g, !1)
-      }
-    }
-  };
-  a.prototype.pluginInit = function() {
-    this._el.getElementsByTagName("img");
-    this.annotator.subscribe("annotationUpdated", function(a) {
-      "target" in a && a.target.forEach(function(c) {
-        "selector" in c && 0 < c.selector.length && "ShapeSelector" == c.selector[0].type && self.updateAnnotation(a)
-      })
-    });
-    this.annotator.subscribe("annotationDeleted", function(a) {
-      "target" in a && a.target.forEach(function(c) {
-        "selector" in c && 0 < c.selector.length && "ShapeSelector" == c.selector[0].type && self.deleteAnnotation(a)
-      })
-    })
+  a.prototype.getImageForAnnotation = function(a) {
+    return this.handlers[a.source]._image
   };
   return a
 }();

@@ -7236,22 +7236,29 @@ annotorious.hypo.ImagePlugin = function(a, b) {
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_COMPLETED, this._imageAnnotator._eventBroker._handlers[annotorious.events.EventType.SELECTION_COMPLETED][0]);
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_CANCELED, c);
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_COMPLETED, function(a) {
+    d.maybeClicked = !1;
     var b = d._imageAnnotator._image.src + "#" + (new Date).toString();
     d._imageAnnotator.addAnnotation({src:d._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b});
     d._imageAnnotator.stopSelection();
     d._imagePlugin.annotate(d._imageAnnotator._image.src, a.shape.type, a.shape.geometry, b)
   });
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_CANCELED, function() {
+    if(d.maybeClicked) {
+      var a = annotorious.events.ui.sanitizeCoordinates(d.clickEvent, e), a = d._imageAnnotator.getAnnotationsAt(a.x, a.y), b = [], c;
+      for(c in a) {
+        b.push(a[c].highlight.annotation)
+      }
+      d._imagePlugin.showAnnotations(b)
+    }
     annotorious.events.ui.hasMouse && goog.style.showElement(d._imageAnnotator._editCanvas, !1);
     d._imageAnnotator._currentSelector.stopSelection()
   });
+  this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_STARTED, function() {
+    d.maybeClicked = !0
+  });
   var e = annotorious.events.ui.hasTouch ? this._imageAnnotator._editCanvas : this._imageAnnotator._viewCanvas;
   goog.events.listen(e, annotorious.events.ui.EventType.DOWN, function(a) {
-    var a = annotorious.events.ui.sanitizeCoordinates(a, e), a = d._imageAnnotator.getAnnotationsAt(a.x, a.y), b = [], c;
-    for(c in a) {
-      b.push(a[c].highlight.annotation)
-    }
-    d._imagePlugin.showAnnotations(b)
+    d.clickEvent = a
   });
   annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
     this._imageAnnotator.addAnnotation(a)

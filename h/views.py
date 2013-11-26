@@ -65,6 +65,7 @@ class AnnotationController(BaseController):
         d = url_values_from_document(context)
         d['annotation'] = context
         d['annotation']['referrers'] = context.referrers
+        d['image_src'] = context.image_src
 
         if context.get('references', []):
             parent = context.__parent__[context['references'][-1]]

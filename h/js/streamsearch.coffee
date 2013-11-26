@@ -5,8 +5,11 @@ get_quote = (annotation) ->
   quote = '(Reply annotation)'
   for target in annotation['target']
     for selector in target['selector']
-        if selector['type'] is 'TextQuoteSelector'
+        if selector.type is 'TextQuoteSelector'
             quote = selector['exact'] + ' '
+        if selector.type is 'ShapeSelector'
+            quote = ''
+            break
   quote
 
 # This class will process the results of search and generate the correct filter

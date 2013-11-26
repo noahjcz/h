@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-11-26 10:34:29Z
+** Built at: 2013-11-26 11:16:31Z
 */
 
 
@@ -53,9 +53,15 @@
       hi_fill: void 0
     };
 
+    ImageHighlight.Annotator = Annotator;
+
+    ImageHighlight.$ = Annotator.$;
+
     function ImageHighlight(anchor, pageIndex, image, shape, geometry, annotorious) {
       this.annotorious = annotorious;
       ImageHighlight.__super__.constructor.call(this, anchor, pageIndex);
+      this.$ = ImageHighlight.$;
+      this.Annotator = ImageHighlight.Annotator;
       this.alwaysOnMode = false;
       this.active = false;
       this.annotoriousAnnotation = {
@@ -110,18 +116,20 @@
     };
 
     ImageHighlight.prototype.getTop = function() {
-      return $(this._getDOMElements()).offset().top + this.annotoriousAnnotation.heatmapGeometry.y;
+      return this.$(this._getDOMElements()).offset().top + this.annotoriousAnnotation.heatmapGeometry.y;
     };
 
     ImageHighlight.prototype.getHeight = function() {
       return this.annotoriousAnnotation.heatmapGeometry.h;
     };
 
-    ImageHighlight.prototype.getBottom = function() {};
+    ImageHighlight.prototype.scrollTo = function() {
+      return this.$(this._getDOMElements()).scrollintoview();
+    };
 
-    ImageHighlight.prototype.scrollTo = function() {};
-
-    ImageHighlight.prototype.paddedScrollTo = function(direction) {};
+    ImageHighlight.prototype.paddedScrollTo = function(direction) {
+      return this.scrollTo();
+    };
 
     return ImageHighlight;
 

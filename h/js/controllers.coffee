@@ -886,7 +886,7 @@ class Search
       # - populate the top/bottom show more links
       # - decide that by default the annotation is shown or hidden
       # - Open detail mode for quote hits
-      for thread in threads
+      for thread in threads when thread.message?
         thread.message.highlightText = thread.message.text
         if thread.message.id in $scope.search_filter
           $scope.ann_info.shown[thread.message.id] = true

@@ -7346,6 +7346,11 @@ window.Annotorious.ImagePlugin = function() {
   a.prototype.getImageForAnnotation = function(a) {
     return this.handlers[a.source]._image
   };
+  a.prototype.updateShapeStyle = function(a, c) {
+    var d = this.handlers[a.source]._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(a.shapes[0])];
+    a.shapes[0].style = c;
+    d.style = c
+  };
   return a
 }();
 annotorious.Annotation = function(a, b, c) {

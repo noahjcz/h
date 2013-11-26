@@ -460,7 +460,8 @@ imagequote = [ ->
       scope.loadPicture(img_url, shapeSelector, container).done(scope.cropImage)
 
     scope.$watch 'target', (target) ->
-      if scope.rendered then return
+      unless (not scope.rendered) and target? and target.length > 0 then return
+
       target = JSON.parse target
       shapeSelector = null
       image_src = null

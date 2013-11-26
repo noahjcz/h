@@ -207,9 +207,21 @@ class Annotation(BaseResource, dict):
         # Create nested list form
         return self._nestlist(childTable.get(self['id']), childTable)
 
+    @property
+    def image_src(self):
+        if not 'target' in self: return ''
+        image_src = ''
+        for target in self['target']:
+            for selector in target['selector']:
+                if selector['type'] == 'ShapeSelector':
+                    image_src = selector['source']
+
+        return image_src
+
 
 class StreamSearch(BaseResource, dict):
     pass
+
 
 class AnnotationFactory(BaseResource):
     def __getitem__(self, key):
@@ -231,6 +243,7 @@ class AnnotationFactory(BaseResource):
         annotation.update(data)
 
         return annotation
+
 
 class Stream(BaseResource, dict):
     pass

@@ -25,7 +25,10 @@
                     <!-- Image annotation -->
                     <div class="excerpt">
                       <imagequote target="{{annotation.target}}"
-                                  scale="true"/>
+                                  strategy="propotional_limit"
+                                  scalesmaller="true"
+                                  heightlimit="75"
+                                  widthlimit="450"/>
                     </div>
                     <a href="{{annotation.source}}">{{annotation.source_stripped}}</a>
                     |

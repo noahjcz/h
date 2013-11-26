@@ -284,7 +284,7 @@ class Annotator.Guest extends Annotator
   # When clicking on a highlight in highlighting mode,
   # tell the sidebar to bring up the viewer for the relevant annotations
   onAnchorClick: (annotations, highlightType) =>
-    if highlightType is not 'ImageHighlight'
+    if highlightType isnt 'ImageHighlight'
       return unless (@tool is 'highlight') or @visibleHighlights and @noBack
 
     # Tell sidebar to show the viewer for these annotations

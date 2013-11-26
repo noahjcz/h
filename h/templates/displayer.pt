@@ -36,20 +36,42 @@
         <div class="paper yui3-g thread steam-list">
           <div class="yui3-u-1"
                ng-class="(annotation.text || annotation.replies.length || annotation.tags.length) && '' || '' ">
-            <div class="excerpt"
-                 ng-show="root.quote.length">
-              <blockquote ng-show="root.quoteSource == 'document'">{{root.quote}}</blockquote>
-              <blockquote ng-hide="root.quoteSource == 'document'">
-                <markdown ng-model="$parent.root.quote"
-                          ng-readonly="true"
-                          name="quote" />
-	      </blockquote>
-            </div>
-            <div class="domain thread">
+
+            <!-- Regular quote -->
+            <span ng-show="root.quote.length">
+              <div class="excerpt"
+                   ng-show="root.quote.length">
+                <blockquote ng-show="root.quoteSource == 'document'">{{root.quote}}</blockquote>
+                <blockquote ng-hide="root.quoteSource == 'document'">
+                   <markdown ng-model="$parent.root.quote"
+                             ng-readonly="true"
+                             name="quote" />
+	            </blockquote>
+              </div>
+              <div class="domain thread">
                     <a href="{{root.source}}">{{root.source_stripped}}</a>
                     |
                     <a href="{{root.uri}}">{{root.title}}</a>
-            </div>
+              </div>
+            </span>
+
+            <span ng-show="root.image_src">
+              <div class="domain thread">
+                <!-- Image annotation -->
+                <div class="excerpt">
+                  <!-- Image annotation -->
+                  <imagequote target="{{annotation.target}}"
+                              strategy="propotional_limit"
+                              scalesmaller="true"
+                              heightlimit="75"
+                              widthlimit="450"/>
+                </div>
+                <a href="{{root.source}}">{{root.source_stripped}}</a>
+                |
+                <a href="{{root.uri}}">{{root.title}}</a>
+              </div>
+            </span>
+
             <div class="yui3-u-1"
                  ng-class="(root.quote.length) && '' || ''"
                  ng-show="annotation.text || annotation.replies.length || annotation.tags.length">

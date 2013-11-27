@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-11-27 13:46:55Z
+** Built at: 2013-11-27 14:30:33Z
 */
 
 
@@ -101,9 +101,14 @@
       return this._temporary = value;
     };
 
-    ImageHighlight.prototype.setActive = function(value) {
+    ImageHighlight.prototype.setActive = function(value, batch) {
+      if (batch == null) {
+        batch = false;
+      }
       this.active = value;
-      return this.annotorious.drawAnnotationHighlight(this.annotoriousAnnotation, this.visibleHighlight);
+      if (!batch) {
+        return this.annotorious.drawAnnotationHighlights(this.annotoriousAnnotation.source, this.visibleHighlight);
+      }
     };
 
     ImageHighlight.prototype._getDOMElements = function() {
@@ -126,14 +131,19 @@
       return this.scrollTo();
     };
 
-    ImageHighlight.prototype.setVisibleHighlight = function(state) {
+    ImageHighlight.prototype.setVisibleHighlight = function(state, batch) {
+      if (batch == null) {
+        batch = false;
+      }
       this.visibleHighlight = state;
       if (state) {
         this.annotorious.updateShapeStyle(this.annotoriousAnnotation, this.highlightStyle);
       } else {
         this.annotorious.updateShapeStyle(this.annotoriousAnnotation, this.defaultStyle);
       }
-      return this.annotorious.drawAnnotationHighlight(this.annotoriousAnnotation, this.visibleHighlight);
+      if (!batch) {
+        return this.annotorious.drawAnnotationHighlights(this.annotoriousAnnotation.source, this.visibleHighlight);
+      }
     };
 
     return ImageHighlight;
@@ -174,6 +184,7 @@
         _this = this;
       this.highlightType = 'ImageHighlight';
       this.images = {};
+      this.visibleHighlights = false;
       wrapper = this.annotator.wrapper[0];
       this.imagelist = $(wrapper).find('img');
       _ref1 = this.imagelist;
@@ -192,15 +203,31 @@
           return delete _this.pendingID;
         }
       });
-      return this.annotator.subscribe("setVisibleHighlights", function(state) {
-        var hl, imageHighlights, _j, _len1, _results;
+      this.annotator.subscribe("setVisibleHighlights", function(state) {
+        var hl, imageHighlights, src, _, _j, _len1, _ref2, _results;
+        _this.visibleHighlights = state;
         imageHighlights = _this.annotator.getHighlights().filter(function(hl) {
           return hl instanceof ImageHighlight;
         });
-        _results = [];
         for (_j = 0, _len1 = imageHighlights.length; _j < _len1; _j++) {
           hl = imageHighlights[_j];
-          _results.push(hl.setVisibleHighlight(state));
+          hl.setVisibleHighlight(state, true);
+        }
+        _ref2 = _this.images;
+        _results = [];
+        for (src in _ref2) {
+          _ = _ref2[src];
+          _results.push(_this.annotorious.drawAnnotationHighlights(src, _this.visibleHighlights));
+        }
+        return _results;
+      });
+      return this.annotator.subscribe("finalizeHighlights", function() {
+        var src, _, _ref2, _results;
+        _ref2 = _this.images;
+        _results = [];
+        for (src in _ref2) {
+          _ = _ref2[src];
+          _results.push(_this.annotorious.drawAnnotationHighlights(src, _this.visibleHighlights));
         }
         return _results;
       });

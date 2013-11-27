@@ -7335,10 +7335,10 @@ window.Annotorious.ImagePlugin = function() {
   a.prototype.deleteAnnotation = function(a) {
     this.handlers[a.source].deleteAnnotation(a)
   };
-  a.prototype.drawAnnotationHighlight = function(a, c) {
-    var d = this.handlers[a.source]._imageAnnotator._viewer;
+  a.prototype.drawAnnotationHighlights = function(a, c) {
+    var d = this.handlers[a]._imageAnnotator._viewer;
     d._g2d.clearRect(0, 0, d._canvas.width, d._canvas.height);
-    this.addRemoveImageFocus(a.source, !0);
+    this.addRemoveImageFocus(a, !0);
     var e = !1, f;
     for(f in d._annotations) {
       var g = d._annotations[f];
@@ -7346,7 +7346,7 @@ window.Annotorious.ImagePlugin = function() {
         e = d._shapes[annotorious.shape.hashCode(g.shapes[0])], d._draw(e, g.highlight.active), e = !0
       }
     }
-    e || this.addRemoveImageFocus(a.source, !1)
+    e || this.addRemoveImageFocus(a, !1)
   };
   a.prototype.getImageForAnnotation = function(a) {
     return this.handlers[a.source]._image

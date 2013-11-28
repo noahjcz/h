@@ -492,8 +492,6 @@ imagequote = ['$window', '$timeout', ($window, $timeout) ->
     scope.$on "windowResized", ->
       $timeout =>
         if $window.innerWidth > 0 and scope.rendered and scope.autoresize
-          #$(elem).empty()
-          #scope.canvas = null
           scope.createCroppedCanvas scope.image_src, scope.shapeSelector, elem, true
       , 100
 

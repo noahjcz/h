@@ -394,17 +394,21 @@ whenscrolled = ['$window', ($window) ->
         scope.$apply attr.whenscrolled
 ]
 
-imagequote = [ ->
+imagequote = ['$window', '$timeout', ($window, $timeout) ->
   link: (scope, elem, attr, ctrl) ->
+    unless scope.autoresize then scope.autoresize = false
+    scope.rendered = false
     scope.loadPicture = (img_url, shapeSelector, container, scale) ->
       r = $.Deferred()
       $("<img/>").attr("src", img_url).load ->
         r.resolve this, shapeSelector, container, scale
       r
 
-    scope.applyScalingStrategy = (width, height) ->
+    scope.applyScalingStrategy = (width, height, autoresize) ->
       newheight = height
       newwidth = width
+      if autoresize and (scope.widthlimit != $window.innerWidth - 60)
+        scope.widthlimit = ($window.innerWidth - 60)
       switch scope.strategy
         when 'propotional_limit'
           if scope.widthlimit? > 0
@@ -438,7 +442,7 @@ imagequote = [ ->
 
       [newwidth, newheight]
 
-    scope.cropImage = (image, shapeSelector, container) ->
+    scope.cropImage = (image, shapeSelector, container, autoresize) ->
       unless shapeSelector? then return
       if shapeSelector.shapeType is 'rect'
         # Convert fraction to pixel
@@ -446,20 +450,26 @@ imagequote = [ ->
         height = shapeSelector.geometry.height * image.height
         x = shapeSelector.geometry.x * image.width
         y = shapeSelector.geometry.y * image.height
-        [newwidth, newheight]  = scope.applyScalingStrategy width, height
+        [newwidth, newheight]  = scope.applyScalingStrategy width, height, autoresize
 
-        imgCanvas = document.createElement "canvas"
-        imgContext = imgCanvas.getContext "2d"
+        if scope.canvas
+          imgCanvas = scope.canvas
+          imgContext = imgCanvas.getContext "2d"
+          imgContext.clearRect 0, 0, scope.canvas.width, scope.canvas.height
+        else
+          imgCanvas = document.createElement "canvas"
+          imgContext = imgCanvas.getContext "2d"
 
         imgCanvas.width = newwidth
         imgCanvas.height = newheight
         imgContext.drawImage image, x, y, width, height, 0, 0, newwidth, newheight
+        scope.canvas = imgCanvas
         container.append imgCanvas
 
-    scope.createCroppedCanvas = (img_url, shapeSelector, container) ->
-      scope.loadPicture(img_url, shapeSelector, container).done(scope.cropImage)
+    scope.createCroppedCanvas = (img_url, shapeSelector, container, autoresize = false) ->
+      scope.loadPicture(img_url, shapeSelector, container, autoresize).done(scope.cropImage)
 
-    scope.$watch 'target', (target) ->
+    scope.$watch 'target', (target) =>
       unless (not scope.rendered) and target? and target.length > 0 then return
 
       target = JSON.parse target
@@ -475,7 +485,17 @@ imagequote = [ ->
 
       if shapeSelector?
         scope.rendered = true
+        scope.shapeSelector = shapeSelector
+        scope.image_src = image_src
         scope.createCroppedCanvas image_src, shapeSelector, elem
+
+    scope.$on "windowResized", ->
+      $timeout =>
+        if $window.innerWidth > 0 and scope.rendered and scope.autoresize
+          #$(elem).empty()
+          #scope.canvas = null
+          scope.createCroppedCanvas scope.image_src, scope.shapeSelector, elem, true
+      , 100
 
   require: '?ngModel'
   restrict: 'E'
@@ -485,6 +505,7 @@ imagequote = [ ->
     heightlimit: '@'
     widthlimit: '@'
     target: '@'
+    autoresize: '@'
 ]
 
 angular.module('h.directives', ['ngSanitize'])

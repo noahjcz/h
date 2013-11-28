@@ -8,11 +8,11 @@ class App
     ongoingHighlightSwitch: false
 
   this.$inject = [
-    '$element', '$filter', '$http', '$location', '$rootScope', '$scope', '$timeout',
+    '$element', '$filter', '$http', '$location', '$rootScope', '$scope', '$timeout', '$window',
     'annotator', 'authentication', 'streamfilter'
   ]
   constructor: (
-    $element, $filter, $http, $location, $rootScope, $scope, $timeout
+    $element, $filter, $http, $location, $rootScope, $scope, $timeout, $window
     annotator, authentication, streamfilter
   ) ->
     # Get the base URL from the base tag or the app location
@@ -25,6 +25,9 @@ class App
     $scope.baseUrl = baseUrl
 
     {plugins, host, providers} = annotator
+
+    $window.onresize = ->
+      $rootScope.$broadcast "windowResized"
 
     $scope.$watch 'auth.personas', (newValue, oldValue) =>
       unless newValue?.length

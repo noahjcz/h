@@ -7237,10 +7237,10 @@ annotorious.hypo.ImagePlugin = function(a, b) {
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_CANCELED, c);
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_COMPLETED, function(a) {
     d.maybeClicked = !1;
-    var b = d._imageAnnotator._image.src + "#" + (new Date).toString();
-    d._imageAnnotator.addAnnotation({src:d._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b});
+    var b = d._imageAnnotator._image.src + "#" + (new Date).toString(), c = {source:d._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b};
+    d._imageAnnotator.addAnnotation(c);
     d._imageAnnotator.stopSelection();
-    d._imagePlugin.annotate(d._imageAnnotator._image.src, a.shape.type, a.shape.geometry, b)
+    d._imagePlugin.annotate(d._imageAnnotator._image.src, a.shape.type, a.shape.geometry, b, c)
   });
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_CANCELED, function() {
     if(d.maybeClicked) {

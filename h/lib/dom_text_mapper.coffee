@@ -228,9 +228,11 @@ class window.DomTextMapper
         @performUpdateOnNode parentNode, "escalated from " + reason, true
       else
         # Oops. This was the root node! That means the corpus has changed.
-        @restoreSelection()
-        @_corpusChanged()
-        @saveSelection()
+
+        # We have to give this some time, to escape the potential
+        # mutation summary callback
+        setTimeout =>
+          @_corpusChanged()
     unless escalating then @restoreSelection()        
 
   # Return info for a given path in the DOM
@@ -296,7 +298,6 @@ class window.DomTextMapper
     @_syncState "getMappingsForCharRange(" + start + ", " + end + ")"
 
 #    @log "Collecting nodes for [" + start + ":" + end + "]"
-    @scan()
 
     # Collect the matching path infos
     # @log "Collecting mappings"
@@ -329,7 +330,7 @@ class window.DomTextMapper
               mapping.end = end - info.start
               mapping.wanted = info.content.substr mapping.start,
                   mapping.end - mapping.start
-     
+
             @computeSourcePositions mapping
             mapping.yields = info.node.data.substr mapping.startCorrected,
                 mapping.endCorrected - mapping.startCorrected
@@ -600,9 +601,9 @@ class window.DomTextMapper
 
   # Convert "display" text indices to "source" text indices.
   computeSourcePositions: (match) ->
-#    @log "In computeSourcePosition"
-#    @log match.element.path
-#    @log match.element.node.data
+#    @log "In computeSourcePosition",
+#      match.element.path,
+#      match.element.node.data
 
     # the HTML source of the text inside a text element.
 #    @log "Calculating source position at " + match.element.path
@@ -640,7 +641,7 @@ class window.DomTextMapper
       sourceIndex++
     match.startCorrected = sourceStart
     match.endCorrected = sourceEnd
-#    @log "computeSourcePosition done. Corrected charRange is: " +
+#    @log "computeSourcePosition done. Corrected charRange is: ",
 #      match.startCorrected + "-" + match.endCorrected
     null
 
@@ -921,7 +922,7 @@ class window.DomTextMapper
       return
 
     # Actually react to the changes
-#    @log reason #, changes
+#    @log reason, changes
 
     # Collect all the interesting nodes
     changedNodes = @_getInvolvedNodes changes

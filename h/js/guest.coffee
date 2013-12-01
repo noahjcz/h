@@ -167,6 +167,13 @@ class Annotator.Guest extends Annotator
       this.publish 'setVisibleHighlights', state
     )
 
+  scanDocument: (reason = "something happened") =>
+    try
+      this._scan reason
+    catch e
+      console.log e.message
+      console.log e.stack
+
   _setupWrapper: ->
     @wrapper = @element
     .on 'click', =>

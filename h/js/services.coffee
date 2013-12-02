@@ -116,7 +116,7 @@ class Hypothesis extends Annotator
             console.log "Provider functions are ready for #{origin}"
             if source is @element.injector().get('$window').parent
               @host = channel
-        entities = []
+        entities = ['http://hypothes.is/wp-content/uploads/2013/11/components.png']
         channel = this._setupXDM options
 
         channel.call
@@ -405,6 +405,7 @@ class Hypothesis extends Annotator
             console.log "Loading annotations for: " + uri
             this.entities[uri] = true
             this.loadAnnotationsFromSearch (angular.extend query, uri: uri)
+
 
     # When the store plugin finishes a request, update the annotation
     # using a monkey-patched update function which updates the threading

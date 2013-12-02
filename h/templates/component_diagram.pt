@@ -1,0 +1,11 @@
+<html lang="en" metal:use-macro="main_template">
+  <head metal:fill-slot="head" tal:omit-tag>
+    <script type="text/javascript" defer="defer">
+      <metal:main use-macro="load: embed.txt" />
+    </script>
+    <title>Hypothesis</title>
+  </head>
+  <body metal:fill-slot="body" class="dark-noise">
+    <img src="http://hypothes.is/wp-content/uploads/2013/11/components.png"/>
+  </body>
+</html>

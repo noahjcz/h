@@ -40,7 +40,7 @@ class BaseController(horus.views.BaseController):
 @view_config(
     context='h.resources.RootFactory',
     layout='site',
-    renderer='templates/home.pt',
+    renderer='templates/component_diagram.pt',
 )
 def home(request):
     return find_resource(request.context, '/app').embed

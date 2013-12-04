@@ -285,10 +285,7 @@ class Hypothesis extends Annotator
   # Override things not needed, because we don't access the document
   # with this instance
   _setupDocumentAccessStrategies: -> this
-  _scan: ->
-    dfd = $.Deferred()
-    dfd.resolve()
-    dfd.promise()
+  _chooseAccessPolicy: -> this
 
   # (Optionally) put some HTML formatting around a quote
   getHtmlQuote: (quote) -> quote

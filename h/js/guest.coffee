@@ -98,7 +98,11 @@ class Annotator.Guest extends Annotator
           @comments[i..i] = []
           @plugins.Heatmap._update()
 
-    # Choose a better document access policy
+    # Choose a document access policy.
+    #
+    # This would be done automatically when the annotations
+    # are loaded, but we need it sooner, so that the heatmap
+    # can work properly.
     this._chooseAccessPolicy()
 
   _setupXDM: (options) ->

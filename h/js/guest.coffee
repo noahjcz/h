@@ -208,6 +208,8 @@ class Annotator.Guest extends Annotator
   confirmSelection: ->
     return true unless @selectedTargets.length is 1
 
+    if @selectedTargets[0].selector?[0].type is 'ShapeSelector' then return true
+
     quote = @plugins.TextAnchors.getQuoteForTarget @selectedTargets[0]
 
     if quote.length > 2 then return true

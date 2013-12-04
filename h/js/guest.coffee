@@ -45,12 +45,10 @@ class Annotator.Guest extends Annotator
   visibleHighlights: false
   noBack: false
 
-  constructor: (element, options, config = {}) ->
+  constructor: (element, options) ->
     Gettext.prototype.parse_locale_data annotator_locale_data
 
-    options.noScan = true
     super
-    delete @options.noScan
 
     # Create an array for holding the comments
     @comments = []
@@ -92,10 +90,6 @@ class Annotator.Guest extends Annotator
       if not @plugins[name]
         this.addPlugin(name, opts)
 
-    unless config.dontScan
-      # Scan the document text with the DOM Text libraries
-      this.scanDocument "Guest initialized"
-
     # Watch for deleted comments
     this.subscribe 'annotationDeleted', (annotation) =>
       if this.isComment annotation
@@ -103,6 +97,9 @@ class Annotator.Guest extends Annotator
         if i isnt -1
           @comments[i..i] = []
           @plugins.Heatmap._update()
+
+    # Choose a better document access policy
+    this._chooseAccessPolicy()
 
   _setupXDM: (options) ->
     # jschannel chokes FF and Chrome extension origins.
@@ -163,13 +160,6 @@ class Annotator.Guest extends Annotator
       this.setVisibleHighlights state, false
       this.publish 'setVisibleHighlights', state
     )
-
-  scanDocument: (reason = "something happened") =>
-    try
-      this._scan reason
-    catch e
-      console.log e.message
-      console.log e.stack
 
   _setupWrapper: ->
     @wrapper = @element

@@ -34,16 +34,16 @@ class TextHighlight extends Annotator.Highlight
       TextHighlight.$.makeArray annotations
 
     annotator.addEvent ".annotator-hl", "mouseover", (event) =>
-      annotator.onAnchorMouseover getAnnotations event, @highlightType
+      annotator.onAnchorMouseover (getAnnotations event), TextHighlight.highlightType
 
     annotator.addEvent ".annotator-hl", "mouseout", (event) =>
-      annotator.onAnchorMouseout getAnnotations event, @highlightType
+      annotator.onAnchorMouseout (getAnnotations event), TextHighlight.highlightType
 
     annotator.addEvent ".annotator-hl", "mousedown", (event) =>
-      annotator.onAnchorMousedown getAnnotations event, @highlightType
+      annotator.onAnchorMousedown (getAnnotations event), TextHighlight.highlightType
 
     annotator.addEvent ".annotator-hl", "click", (event) =>
-      annotator.onAnchorClick getAnnotations event, @highlightType
+      annotator.onAnchorClick (getAnnotations event), TextHighlight.highlightType
 
     @_inited.push annotator
 
@@ -66,25 +66,7 @@ class TextHighlight extends Annotator.Highlight
     # but better than breaking table layouts.
 
     nodes = @$(normedRange.textNodes()).filter((i) -> not white.test @nodeValue)
-    r = nodes.wrap(hl).parent().show().toArray()
-    for node in nodes
-      event = document.createEvent "UIEvents"
-      event.initUIEvent "domChange", true, false, window, 0
-      event.reason = "created hilite"
-      node.dispatchEvent event
-    r
-
-  # Public: highlight a list of ranges
-  #
-  # normedRanges - An array of NormalizedRanges to be highlighted.
-  # cssClass - A CSS class to use for the highlight (default: 'annotator-hl')
-  #
-  # Returns an array of highlight Elements.
-  _highlightRanges: (normedRanges, cssClass='annotator-hl') ->
-    highlights = []
-    for r in normedRanges
-      @$.merge highlights, this._highlightRange(r, cssClass)
-    highlights
+    nodes.wrap(hl).parent().show().toArray()
 
   constructor: (anchor, pageIndex, normedRange) ->
     super anchor, pageIndex
@@ -92,6 +74,7 @@ class TextHighlight extends Annotator.Highlight
 
     @$ = TextHighlight.$
     @Annotator = TextHighlight.Annotator
+    @highlightType = 'TextHighlight'
 
     # Create a highlights, and link them with the annotation
     @_highlights = @_highlightRange normedRange
@@ -125,11 +108,6 @@ class TextHighlight extends Annotator.Highlight
         # We should restore original state
         child = hl.childNodes[0]
         @$(hl).replaceWith hl.childNodes
-
-        event = document.createEvent "UIEvents"
-        event.initUIEvent "domChange", true, false, window, 0
-        event.reason = "removed hilite (annotation deleted)"
-        child.parentNode.dispatchEvent event
 
   # Get the HTML elements making up the highlight
   _getDOMElements: -> @_highlights

@@ -291,15 +291,16 @@ class Hypothesis extends Annotator
   # Override things not needed, because we don't access the document
   # with this instance
   _setupDocumentAccessStrategies: -> this
-  _scan: -> this
+  _chooseAccessPolicy: -> this
 
   # (Optionally) put some HTML formatting around a quote
   getHtmlQuote: (quote) -> quote
 
   # Do nothing in the app frame, let the host handle it.
   setupAnnotation: (annotation) ->
-    annotation.highlights = []
-    annotation
+    dfd = $.Deferred()
+    dfd.resolve annotation
+    dfd.promise()
 
   sortAnnotations: (a, b) ->
     a_upd = if a.updated? then new Date(a.updated) else new Date()

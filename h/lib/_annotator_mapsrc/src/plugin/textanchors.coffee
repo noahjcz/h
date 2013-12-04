@@ -20,8 +20,10 @@ class TextPositionAnchor extends Annotator.Anchor
 
     # This pair of offsets is the key information,
     # upon which this anchor is based upon.
-    unless @start? then throw "start is required!"
-    unless @end? then throw "end is required!"
+    unless @start? then throw new Error "start is required!"
+    unless @end? then throw new Error "end is required!"
+
+    #console.log "Created TextPositionAnchor [", start, ":", end, "]"
 
     @Annotator = TextPositionAnchor.Annotator
 
@@ -63,7 +65,7 @@ class TextRangeAnchor extends Annotator.Anchor
 
     super annotator, annotation, target, 0, 0, quote
 
-    unless @range? then throw "range is required!"
+    unless @range? then throw new Error "range is required!"
 
     @Annotator = TextRangeAnchor.Annotator
 
@@ -83,7 +85,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
   pluginInit: ->
     # We need text highlights
     unless @annotator.plugins.TextHighlights
-      throw "The TextAnchors Annotator plugin requires the TextHighlights plugin."
+      throw new Error "The TextAnchors Annotator plugin requires the TextHighlights plugin."
 
     @Annotator = Annotator
     @$ = Annotator.$
@@ -92,14 +94,16 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     @annotator.anchoringStrategies.push
       # Simple strategy based on DOM Range
       name: "range"
-      code: @createFromRangeSelector
+      create: @createFromRangeSelector
+      verify: @verifyTextAnchor
 
     @annotator.anchoringStrategies.push
       # Position-based strategy. (The quote is verified.)
       # This can handle document structure changes,
       # but not the content changes.
       name: "position"
-      code: @createFromPositionSelector
+      create: @createFromPositionSelector
+      verify: @verifyTextAnchor
 
     # Register the event handlers required for creating a selection
     $(@annotator.wrapper).bind({
@@ -107,8 +111,8 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     })
 
     # Export these anchor types
-    @annotator.TextPositionAnchor = TextPositionAnchor
-    @annotator.TextRangeAnchor = TextRangeAnchor
+    @Annotator.TextPositionAnchor = TextPositionAnchor
+    @Annotator.TextRangeAnchor = TextRangeAnchor
 
     # React to the enableAnnotation event
     @annotator.subscribe "enableAnnotating", (value) => if value
@@ -287,11 +291,52 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Strategies used for creating anchors from saved data
 
+  # Verify a text position anchor
+  verifyTextAnchor: (anchor, reason, data) =>
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
+    # When we don't have d-t-m, we might create TextRangeAnchors.
+    # Lets' handle that first!"
+    if anchor instanceof @Annotator.TextRangeAnchor
+      # Basically, we have no idea
+      dfd.resolve false # we don't trust in text ranges too much
+      return dfd.promise()
+
+    # What else could this be?
+    unless anchor instanceof @Annotator.TextPositionAnchor
+      # This should not happen. No idea
+      console.log "Hey, how come that I don't know anything about",
+        "this kind of anchor?", anchor
+      dfd.resolve false # we have no idea what this is
+      return dfd.promise()
+
+    # OK, now we know that we have TextPositionAnchor.
+
+    unless reason is "corpus change"
+      dfd.resolve true # We don't care until the corpus has changed
+      return dfd.promise()
+
+    # Get the current quote
+    corpus = @annotator.domMapper.getCorpus()
+    content = corpus[ anchor.start .. anchor.end-1 ].trim()
+    currentQuote = @annotator.normalizeString content
+
+    # Compare it with the stored one
+    dfd.resolve (currentQuote is anchor.quote)
+    dfd.promise()
+
   # Create and anchor using the saved Range selector.
   # The quote is verified.
   createFromRangeSelector: (annotation, target) =>
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
+    # Look up the required selector
     selector = @annotator.findSelector target.selector, "RangeSelector"
-    unless selector? then return null
+    unless selector?
+      dfd.reject "no RangeSelector found"
+      return dfd.promise()
 
     # Before going any further, re-evaluate the presence of DTM
     @checkDTM()
@@ -301,7 +346,8 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       range = @Annotator.Range.sniff selector
       normedRange = range.normalize @annotator.wrapper[0]
     catch error
-      return null
+      dfd.reject "failed to normalize range: " + error.message
+      return dfd.promise()
 
     # Get the text of this range
     currentQuote = @annotator.normalizeString if @useDTM
@@ -309,12 +355,15 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
       startInfo = @annotator.domMapper.getInfoForNode normedRange.start
       startOffset = startInfo.start
+      unless startOffset?
+        throw new Error "node @ '" + startInfo.path + "' has no start field!"
       endInfo = @annotator.domMapper.getInfoForNode normedRange.end
       endOffset = endInfo.end
+      unless endOffset
+        throw new Error "node @ '" + endInfo.path + "' has no end field!"
       @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
     else
       # Determine the current content of the given range directly
-
       normedRange.text().trim()
 
     # Look up the saved quote
@@ -323,34 +372,44 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       #console.log "Could not apply XPath selector to current document, " +
       #  "because the quote has changed. (Saved quote is '#{savedQuote}'." +
       #  " Current quote is '#{currentQuote}'.)"
-      return null
+      dfd.reject "the saved quote doesn't match"
+      return dfd.promise()
 
     if @useDTM
       # Create a TextPositionAnchor from the start and end offsets
       # of this range
       # (to be used with dom-text-mapper)
-      new TextPositionAnchor @annotator, annotation, target,
+      dfd.resolve new TextPositionAnchor @annotator, annotation, target,
         startInfo.start, endInfo.end,
         (startInfo.pageIndex ? 0), (endInfo.pageIndex ? 0),
         currentQuote
     else
       # Create a TextRangeAnchor from this range
       # (to be used whithout dom-text-mapper)
-      new TextRangeAnchor @annotator, annotation, target,
+      dfd.resolve new TextRangeAnchor @annotator, annotation, target,
         normedRange, currentQuote
+
+    dfd.promise()
 
   # Create an anchor using the saved TextPositionSelector.
   # The quote is verified.
   createFromPositionSelector: (annotation, target) =>
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
     # Before going any further, re-evaluate the presence of DTM
     @checkDTM()
 
     # This strategy depends on dom-text-mapper
-    return unless @useDTM
+    unless @useDTM
+      dfd.reject "DTM is not present"
+      return dfd.promise()
 
     # We need the TextPositionSelector
     selector = @annotator.findSelector target.selector, "TextPositionSelector"
-    return unless selector?
+    unless selector
+      dfd.reject "no TextPositionSelector found"
+      return dfd.promise()
 
     content = @annotator.domMapper.getCorpus()[selector.start .. selector.end-1].trim()
     currentQuote = @annotator.normalizeString content
@@ -362,12 +421,14 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       #  " because the quote has changed. " +
       #  "(Saved quote is '#{savedQuote}'." +
       #  " Current quote is '#{currentQuote}'.)"
-      return null
+      dfd.reject "the saved quote doesn't match"
+      return dfd.promise()
 
     # Create a TextPositionAnchor from this data
-    new TextPositionAnchor @annotator, annotation, target,
+    dfd.resolve new TextPositionAnchor @annotator, annotation, target,
       selector.start, selector.end,
       (@annotator.domMapper.getPageIndexForPos selector.start),
       (@annotator.domMapper.getPageIndexForPos selector.end),
       currentQuote
 
+    dfd.promise()

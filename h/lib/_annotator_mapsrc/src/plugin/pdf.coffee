@@ -47,22 +47,6 @@ class window.PDFTextMapper extends window.PageTextMapperCore
         # Forget info about the new DOM subtree
         @_unmapPage @pageInfo[index]
 
-    # Do something about cross-page selections
-    viewer = document.getElementById "viewer"
-    viewer.addEventListener "domChange", (event) =>
-      node = event.srcElement
-      data = event.data
-      if "viewer" is node.getAttribute? "id"
-        console.log "Detected cross-page change event."
-        # This event escaped the pages.
-        # Must be a cross-page selection.
-        if data.start? and data.end?
-          startPage = @getPageForNode data.start
-          endPage = @getPageForNode data.end
-          for index in [ startPage.index .. endPage.index ]
-            #console.log "Should rescan page #" + index
-            @_updateMap @pageInfo[index]
-
     $(PDFView.container).on 'scroll', => @_onScroll()
 
   _extractionPattern: /[ ]+/g
@@ -156,4 +140,5 @@ class Annotator.Plugin.PDF extends Annotator.Plugin
     @annotator.documentAccessStrategies.unshift
       # Strategy to handle PDF documents rendered by PDF.js
       name: "PDF.js"
-      mapper: PDFTextMapper
+      applicable: PDFTextMapper.applicable
+      get: -> new PDFTextMapper()

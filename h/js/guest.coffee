@@ -293,9 +293,11 @@ class Annotator.Guest extends Annotator
 
   # Override for setupAnnotation, to handle comments
   setupAnnotation: (annotation) ->
-    annotation = super # Set up annotation as usual
-    if this.isComment annotation then @comments.push annotation
-    annotation
+    promise = super # Set up annotation as usual
+    promise.then (annotation) =>
+      if this.isComment annotation
+        @comments.push annotation
+    promise
 
   # Open the sidebar
   showFrame: ->
@@ -329,32 +331,32 @@ class Annotator.Guest extends Annotator
 
     # Show a temporary highlight so the user can see what they selected
     # Also extract the quotation and serialize the ranges
-    annotation = this.setupAnnotation(this.createAnnotation())
+    this.setupAnnotation(this.createAnnotation()).then (annotation) =>
 
-    hl.setTemporary(true) for hl in @getHighlights([annotation])
+      hl.setTemporary(true) for hl in @getHighlights([annotation])
 
-    # Subscribe to the editor events
+      # Subscribe to the editor events
 
-    # Make the highlights permanent if the annotation is saved
-    save = =>
-      do cleanup
-      hl.setTemporary false for hl in @getHighlights [annotation]
+      # Make the highlights permanent if the annotation is saved
+      save = =>
+        do cleanup
+        hl.setTemporary false for hl in @getHighlights [annotation]
 
-    # Remove the highlights if the edit is cancelled
-    cancel = =>
-      do cleanup
-      this.deleteAnnotation(annotation)
+      # Remove the highlights if the edit is cancelled
+      cancel = =>
+        do cleanup
+        this.deleteAnnotation(annotation)
 
-    # Don't leak handlers at the end
-    cleanup = =>
-      this.unsubscribe('annotationEditorHidden', cancel)
-      this.unsubscribe('annotationEditorSubmit', save)
+      # Don't leak handlers at the end
+      cleanup = =>
+        this.unsubscribe('annotationEditorHidden', cancel)
+        this.unsubscribe('annotationEditorSubmit', save)
 
-    this.subscribe('annotationEditorHidden', cancel)
-    this.subscribe('annotationEditorSubmit', save)
+      this.subscribe('annotationEditorHidden', cancel)
+      this.subscribe('annotationEditorSubmit', save)
 
-    # Display the editor.
-    this.showEditor(annotation, position)
+      # Display the editor.
+      this.showEditor(annotation, position)
 
   onSetTool: (name) ->
     switch name

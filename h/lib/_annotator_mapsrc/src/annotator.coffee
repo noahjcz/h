@@ -42,12 +42,13 @@ _Annotator = this.Annotator
 # Fake two-phase / pagination support, used for HTML documents
 class DummyDocumentAccess
 
+  constructor: (@rootNode) ->
   @applicable: -> true
   getPageIndex: -> 0
   getPageCount: -> 1
+  getPageRoot: -> @rootNode
   getPageIndexForPos: -> 0
   isPageMapped: -> true
-  scan: ->
 
 class Annotator extends Delegator
   # Events to be bound on Annotator#element.
@@ -115,11 +116,16 @@ class Annotator extends Delegator
     this._setupViewer()._setupEditor()
     this._setupDynamicStyle()
 
-    # Perform initial DOM scan, unless told not to.
-    this._scan() unless @options.noScan
+    # Select a document access policy
+    this._chooseAccessPolicy()
+
+    this.enableAnnotating()
 
     # Create adder
     this.adder = $(this.html.adder).appendTo(@wrapper).hide()
+
+    # Create bucket for orphan annotations
+    this.orphans = []
 
   # Initializes the available document access strategies
   _setupDocumentAccessStrategies: ->
@@ -127,48 +133,27 @@ class Annotator extends Delegator
       # Default dummy strategy for simple HTML documents.
       # The generic fallback.
       name: "Dummy"
-      mapper: DummyDocumentAccess
+      applicable: -> true
+      get: => new DummyDocumentAccess @wrapper[0]
     ]
 
     this
 
   # Initializes the components used for analyzing the document
   _chooseAccessPolicy: ->
-    if @domMapper? then return
-
     # Go over the available strategies
     for s in @documentAccessStrategies
       # Can we use this strategy for this document?
-      if s.mapper.applicable()
+      if s.applicable()
         @documentAccessStrategy = s
         console.log "Selected document access strategy: " + s.name
-        @domMapper = new s.mapper()
+        @domMapper = s.get()
         @anchors = {}
         addEventListener "docPageMapped", (evt) =>
           @_realizePage evt.pageIndex
         addEventListener "docPageUnmapped", (evt) =>
           @_virtualizePage evt.pageIndex
-        s.init?()
         return this
-
-  # Perform a scan of the DOM. Required for finding anchors.
-  _scan: ->
-    # If we haven't yet chosen a document access strategy, do so now.
-    this._chooseAccessPolicy() unless @domMapper
-
-    # Launch a scan. (This might return a promise.)
-    dfd = @domMapper.scan()
-
-    # If the strategy did not return a promise, we will create one
-    unless dfd
-      dfd = $.Deferred()
-      dfd.resolve()
-
-    # After the scanning, enable annotating
-    dfd.then @enableAnnotating()
-
-    # Return the promise
-    dfd.promise()
 
 
   # Wraps the children of @element in a @wrapper div. NOTE: This method will also
@@ -411,6 +396,13 @@ class Annotator extends Delegator
     unless annotation.target?
       throw new Error "Can not run setupAnnotation(). No target or selection available."
 
+    # Get a promise to anchor this annotation
+    this.anchorAnnotation annotation
+
+  # Creates the necessary anchors for the given annotation
+  anchorAnnotation: (annotation) ->
+
+    annotation.quote = []
     annotation.quote = (null for t in annotation.target)
     annotation.anchors = []
 
@@ -439,6 +431,7 @@ class Annotator extends Delegator
       ).fail( =>
         console.log "Could not create anchor for annotation '",
           annotation.id, "'."
+          this.orphans.push annotation        
       )
 
     dfd = @Annotator.$.Deferred()
@@ -479,9 +472,16 @@ class Annotator extends Delegator
   #
   # Returns deleted annotation.
   deleteAnnotation: (annotation) ->
-    if annotation.anchors?    
-      for a in annotation.anchors
-        a.remove()
+    if annotation.anchors?
+      if annotation.anchors.length
+        # There were some anchors.
+        for a in annotation.anchors
+          a.remove()
+      else
+        # No anchors, this was an orphan. Remove from orphan list.
+        i = this.orphans.indexOf annotation
+        if i isnt -1
+          this.orphans[i..i] = []
 
     this.publish('annotationDeleted', [annotation])
     annotation
@@ -517,11 +517,8 @@ class Annotator extends Delegator
     clone = annotations.slice()
 
     if annotations.length # Do we have to do something?
+      setTimeout => loader annotations
 
-      # Ensure that we have a doc access strategy
-      @_scan().then =>
-        #console.log "Document scan finished. Can start anchoring."
-        setTimeout => loader annotations
     this
 
   # Public: Calls the Store#dumpAnnotations() method.
@@ -671,9 +668,9 @@ class Annotator extends Delegator
   onSuccessfulSelection: (event, immediate = false) ->
     # Check whether we got a proper event
     unless event?
-      throw "Called onSuccessfulSelection without an event!"
+      throw new Error "Called onSuccessfulSelection without an event!"
     unless event.targets?
-      throw "Called onSuccessulSelection with an event with missing targets!"
+      throw new Error "Called onSuccessulSelection with an event with missing targets!"
 
     # Are we allowed to create annotations?
     unless @canAnnotate
@@ -850,6 +847,35 @@ class Annotator extends Delegator
     # Go over all anchors related to this page
     for anchor in @anchors[index] ? []
       anchor.virtualize index
+
+  # Re-anchor all the annotations
+  _reanchorAnnotations: =>
+    console.log "Reanchoring all annotations."
+
+    # Phase 1: remove all the anchors
+
+    # We will collect all the annotations, starting from the orphan ones
+    annotations = @orphans.slice()
+
+    for page, anchors of @anchors  # Go over all the pages
+      for anchor in anchors.slice() # And all the anchors
+        # Get the annotation
+        annotation = anchor.annotation
+
+        # Add this annotation to our collection
+        annotations.push annotation unless annotation in annotations
+
+        # Remove this anchor from both the pages and the annotation
+        anchor.remove true
+
+    # Phase 2: re-anchor all annotations
+
+    for annotation in annotations # Go over all annotations
+      this.anchorAnnotation annotation # and anchor them
+
+    # Phase 3: send out notifications and updates
+
+    this.publish "annotationsLoaded", [annotations.slice()]
 
   onAnchorMouseover: (annotations, highlightType) ->
     #console.log "Mouse over annotations:", annotations

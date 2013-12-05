@@ -74,10 +74,11 @@ class ImageHighlight extends Annotator.Highlight
     @_temporary = value
 
   # Mark/unmark this hl as active
-  setActive: (value) ->
+  setActive: (value, batch = false) ->
     # TODO: Consider alwaysonannotation
     @active = value
-    @annotorious.drawAnnotationHighlight @annotoriousAnnotation, @visibleHighlight
+    unless batch
+      @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
 
   _getDOMElements: -> @_image
 
@@ -95,13 +96,15 @@ class ImageHighlight extends Annotator.Highlight
   paddedScrollTo: (direction) -> @scrollTo()
     # TODO; scroll to this, with some padding
 
-  setVisibleHighlight: (state) ->
+  setVisibleHighlight: (state, batch = false) ->
     @visibleHighlight = state
     if state
       @annotorious.updateShapeStyle @annotoriousAnnotation, @highlightStyle
     else
       @annotorious.updateShapeStyle @annotoriousAnnotation, @defaultStyle
-    @annotorious.drawAnnotationHighlight @annotoriousAnnotation, @visibleHighlight
+
+    unless batch
+      @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
 
 class ImageAnchor extends Annotator.Anchor
 
@@ -128,8 +131,12 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     # Initialize whatever we have to
     @highlightType = 'ImageHighlight'
 
+    @Annotator = Annotator
+    @$ = Annotator.$
+
     # Collect the images within the wrapper
     @images = {}
+    @visibleHighlights = false
     wrapper = @annotator.wrapper[0]
     @imagelist = $(wrapper).find('img')
     for image in @imagelist
@@ -148,47 +155,69 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
 
     # Upon creating an annotation,
     @annotator.on 'beforeAnnotationCreated', (annotation) =>
-     # Check whether we have triggered it
-     if @pendingID
-       # Yes, this is a newly created image annotation
-       # Pass back the ID, so that Annotorious can recognize it
-       annotation.temporaryImageID = @pendingID
-       delete @pendingID
+      # Check whether we have triggered it
+      if @pendingID
+        # Yes, this is a newly created image annotation
+        # Pass back the ID, so that Annotorious can recognize it
+        annotation.temporaryImageID = @pendingID
+        delete @pendingID
 
     # Reacting to always-on-highlights mode
     @annotator.subscribe "setVisibleHighlights", (state) =>
+      @visibleHighlights = state
       imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
       for hl in imageHighlights
-        hl.setVisibleHighlight state
+        hl.setVisibleHighlight state, true
+
+      for src, _ of @images
+        @annotorious.drawAnnotationHighlights src, @visibleHighlights
+
+    # Reacting to finalizeHighlights
+    @annotator.subscribe "finalizeHighlights", =>
+      for src, _ of @images
+        @annotorious.drawAnnotationHighlights src, @visibleHighlights
 
   # This method is used by Annotator to attempt to create image anchors
   createImageAnchor: (annotation, target) =>
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
     # Fetch the image selector
     selector = @annotator.findSelector target.selector, "ShapeSelector"
 
     # No image selector, no image anchor
-    return unless selector?
+    unless selector?
+      dfd.reject "no ImageSelector found"
+      return dfd.promise()
 
     # Find the image / verify that it exists
     # TODO: Maybe store image hash and compare them.
     image = @images[selector.source]
 
-    # If we can't find the image, return null.
-    return null unless image
+    # If we can't find the image, we fail
+    unless image
+      dfd.reject ("No such image exists as " + selector.source)
+      return dfd.promise()
+
+    # Temporay workaround for highlighter mode
+    if annotation.inject? and @pendingID
+      annotation.temporaryImageID = @pendingID
 
     # Return an image anchor
-    new ImageAnchor @annotator, annotation, target, # Mandatory data
+    dfd.resolve new ImageAnchor @annotator, annotation, target, # Mandatory data
       0, 0, '', # Page numbers. If we want multi-page (=pdf) support, find that out
       image, selector.shapeType, selector.geometry, @annotorious
 
+    dfd.promise()
+
   # This method is triggered by Annotorious to create image annotation
-  annotate: (source, shape, geometry, tempID) ->
+  annotate: (source, shape, geometry, tempID, annotoriousAnnotation) ->
     # Prepare a target describing selection
 
     # Prepare data for Annotator about the selected target
     event =
       targets: [
-        source: annotator.getHref()
+        source: @annotator.getHref()
         selector: [
           type: "ShapeSelector"
           source: source
@@ -201,7 +230,9 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @pendingID = tempID
 
     # Trigger the creation of a new annotation
-    @annotator.onSuccessfulSelection event, true
+    result = @annotator.onSuccessfulSelection event, true
+    unless result
+      @annotorious.deleteAnnotation annotoriousAnnotation
 
   # This method is triggered by Annotorious to show a list of annotations
   showAnnotations: (annotations) =>

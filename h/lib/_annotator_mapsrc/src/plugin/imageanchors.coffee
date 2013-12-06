@@ -152,16 +152,6 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       name: "image"
       code: this.createImageAnchor
 
-
-    # Upon creating an annotation,
-    @annotator.on 'beforeAnnotationCreated', (annotation) =>
-      # Check whether we have triggered it
-      if @pendingID
-        # Yes, this is a newly created image annotation
-        # Pass back the ID, so that Annotorious can recognize it
-        annotation.temporaryImageID = @pendingID
-        delete @pendingID
-
     # Reacting to always-on-highlights mode
     @annotator.subscribe "setVisibleHighlights", (state) =>
       @visibleHighlights = state
@@ -199,10 +189,6 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       dfd.reject ("No such image exists as " + selector.source)
       return dfd.promise()
 
-    # Temporay workaround for highlighter mode
-    if annotation.inject? and @pendingID
-      annotation.temporaryImageID = @pendingID
-
     # Return an image anchor
     dfd.resolve new ImageAnchor @annotator, annotation, target, # Mandatory data
       0, 0, '', # Page numbers. If we want multi-page (=pdf) support, find that out
@@ -225,9 +211,8 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
           geometry: geometry
         ]
       ]
-
-    # Store the received temporary ID
-    @pendingID = tempID
+      annotationData:
+        temporaryImageID: tempID
 
     # Trigger the creation of a new annotation
     result = @annotator.onSuccessfulSelection event, true

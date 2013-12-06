@@ -70,6 +70,7 @@ class Annotator extends Delegator
   viewer: null
 
   selectedTargets: null
+  selectedData: null
 
   mouseIsDown: false
 
@@ -306,6 +307,12 @@ class Annotator extends Delegator
   # Returns a newly created annotation Object.
   createAnnotation: () ->
     annotation = {}
+
+    # If we have saved some data for this annotation, add it here
+    if @selectedData
+      Annotator.$.extend annotation, @selectedData
+      delete @selectedData
+
     this.publish('beforeAnnotationCreated', [annotation])
     annotation
 
@@ -358,7 +365,7 @@ class Annotator extends Delegator
     #console.log "Trying to find anchor for target: ", target
 
     # Create a Deferred object
-    dfd = @Annotator.$.Deferred()
+    dfd = Annotator.$.Deferred()
 
     # Start to go over all the strategies
     @_createAnchorWithStrategies annotation, target,
@@ -405,42 +412,40 @@ class Annotator extends Delegator
   # Creates the necessary anchors for the given annotation
   anchorAnnotation: (annotation) ->
 
-    annotation.quote = []
     annotation.quote = (null for t in annotation.target)
     annotation.anchors = []
 
-    if annotation.target?.length
-      promises = for index in [ 0 .. annotation.target.length-1 ]
-        t = annotation.target[index]
+    promises = for t in annotation.target
 
-        # Create an anchor for this target
-        this.createAnchor(annotation, t).then( (anchor) =>
-          # We have an anchor
-          annotation.quote[index] = t.quote = anchor.quote
-          t.diffHTML = anchor.diffHTML
-          t.diffCaseOnly = anchor.diffCaseOnly
+      index = annotation.target.indexOf t
 
-          # Store this anchor for the annotation
-          annotation.anchors.push anchor
+      # Create an anchor for this target
+      this.createAnchor(annotation, t).then( (anchor) =>
+        # We have an anchor
+        annotation.quote[index] = t.quote = anchor.quote
+        t.diffHTML = anchor.diffHTML
+        t.diffCaseOnly = anchor.diffCaseOnly
 
-          # Store the anchor for all involved pages
-          for pageIndex in [anchor.startPage .. anchor.endPage]
-            @anchors[pageIndex] ?= []
-            @anchors[pageIndex].push anchor
+        # Store this anchor for the annotation
+        annotation.anchors.push anchor
 
-          # Realizing the anchor
-          anchor.realize()
+        # Store the anchor for all involved pages
+        for pageIndex in [anchor.startPage .. anchor.endPage]
+          @anchors[pageIndex] ?= []
+          @anchors[pageIndex].push anchor
 
-        ).fail( =>
-          console.log "Could not create anchor for annotation '",
-            annotation.id, "'."
-            this.orphans.push annotation
-        )
-    else promises = []
+        # Realizing the anchor
+        anchor.realize()
 
-    dfd = @Annotator.$.Deferred()
+      ).fail( =>
+        console.log "Could not create anchor for annotation '",
+          annotation.id, "'."
+          this.orphans.push annotation        
+      )
 
-    @Annotator.$.when(promises...).always =>
+    dfd = Annotator.$.Deferred()
+
+    Annotator.$.when(promises...).always =>
       # Join all the quotes into one string.
       annotation.quote = annotation.quote.filter((q)->q?).join ' / '
       dfd.resolve annotation
@@ -684,6 +689,7 @@ class Annotator extends Delegator
 
     # Store the selected targets
     @selectedTargets = event.targets
+    @selectedData = event.annotationData
 
     # Do we want immediate annotation?
     if immediate
@@ -700,6 +706,7 @@ class Annotator extends Delegator
   onFailedSelection: (event) ->
     @adder.hide()
     @selectedTargets = []
+    delete @selectedData
 
 
   # Public: Determines if the provided element is part of the annotator plugin.
@@ -749,38 +756,38 @@ class Annotator extends Delegator
     annotation = this.createAnnotation()
 
     # Extract the quotation and serialize the ranges
-    annotation = this.setupAnnotation(annotation)
+    this.setupAnnotation(annotation).then (annotation) =>
 
-    # Show a temporary highlight so the user can see what they selected
-    for anchor in annotation.anchors
-      for page, hl of anchor.highlight
-        hl.setTemporary true
-
-    # Make the highlights permanent if the annotation is saved
-    save = =>
-      do cleanup
+      # Show a temporary highlight so the user can see what they selected
       for anchor in annotation.anchors
         for page, hl of anchor.highlight
-          hl.setTemporary false
-      # Fire annotationCreated events so that plugins can react to them
-      this.publish('annotationCreated', [annotation])
+          hl.setTemporary true
 
-    # Remove the highlights if the edit is cancelled
-    cancel = =>
-      do cleanup
-      this.deleteAnnotation(annotation)
+      # Make the highlights permanent if the annotation is saved
+      save = =>
+        do cleanup
+        for anchor in annotation.anchors
+          for page, hl of anchor.highlight
+            hl.setTemporary false
+        # Fire annotationCreated events so that plugins can react to them
+        this.publish('annotationCreated', [annotation])
 
-    # Don't leak handlers at the end
-    cleanup = =>
-      this.unsubscribe('annotationEditorHidden', cancel)
-      this.unsubscribe('annotationEditorSubmit', save)
+      # Remove the highlights if the edit is cancelled
+      cancel = =>
+        do cleanup
+        this.deleteAnnotation(annotation)
 
-    # Subscribe to the editor events
-    this.subscribe('annotationEditorHidden', cancel)
-    this.subscribe('annotationEditorSubmit', save)
+      # Don't leak handlers at the end
+      cleanup = =>
+        this.unsubscribe('annotationEditorHidden', cancel)
+        this.unsubscribe('annotationEditorSubmit', save)
 
-    # Display the editor.
-    this.showEditor(annotation, position)
+      # Subscribe to the editor events
+      this.subscribe('annotationEditorHidden', cancel)
+      this.subscribe('annotationEditorSubmit', save)
+
+      # Display the editor.
+      this.showEditor(annotation, position)
 
   # Annotator#viewer callback function. Displays the Annotator#editor in the
   # positions of the Annotator#viewer and loads the passed annotation for

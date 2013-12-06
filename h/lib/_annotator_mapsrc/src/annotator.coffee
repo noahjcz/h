@@ -70,6 +70,7 @@ class Annotator extends Delegator
   viewer: null
 
   selectedTargets: null
+  selectedData: null
 
   mouseIsDown: false
 
@@ -306,6 +307,12 @@ class Annotator extends Delegator
   # Returns a newly created annotation Object.
   createAnnotation: () ->
     annotation = {}
+
+    # If we have saved some data for this annotation, add it here
+    if @selectedData
+      Annotator.$.extend annotation, @selectedData
+      delete @selectedData
+
     this.publish('beforeAnnotationCreated', [annotation])
     annotation
 
@@ -358,7 +365,7 @@ class Annotator extends Delegator
     #console.log "Trying to find anchor for target: ", target
 
     # Create a Deferred object
-    dfd = @Annotator.$.Deferred()
+    dfd = Annotator.$.Deferred()
 
     # Start to go over all the strategies
     @_createAnchorWithStrategies annotation, target,
@@ -405,13 +412,12 @@ class Annotator extends Delegator
   # Creates the necessary anchors for the given annotation
   anchorAnnotation: (annotation) ->
 
-    annotation.quote = []
     annotation.quote = (null for t in annotation.target)
     annotation.anchors = []
 
-    promises = for index in [ 0 .. annotation.target.length-1 ]
+    promises = for t in annotation.target
 
-      t = annotation.target[index]
+      index = annotation.target.indexOf t
 
       # Create an anchor for this target
       this.createAnchor(annotation, t).then( (anchor) =>
@@ -437,9 +443,9 @@ class Annotator extends Delegator
           this.orphans.push annotation        
       )
 
-    dfd = @Annotator.$.Deferred()
+    dfd = Annotator.$.Deferred()
 
-    @Annotator.$.when(promises...).always =>
+    Annotator.$.when(promises...).always =>
       # Join all the quotes into one string.
       annotation.quote = annotation.quote.filter((q)->q?).join ' / '
       dfd.resolve annotation
@@ -683,6 +689,7 @@ class Annotator extends Delegator
 
     # Store the selected targets
     @selectedTargets = event.targets
+    @selectedData = event.annotationData
 
     # Do we want immediate annotation?
     if immediate
@@ -699,6 +706,7 @@ class Annotator extends Delegator
   onFailedSelection: (event) ->
     @adder.hide()
     @selectedTargets = []
+    delete @selectedData
 
 
   # Public: Determines if the provided element is part of the annotator plugin.
@@ -748,38 +756,38 @@ class Annotator extends Delegator
     annotation = this.createAnnotation()
 
     # Extract the quotation and serialize the ranges
-    annotation = this.setupAnnotation(annotation)
+    this.setupAnnotation(annotation).then (annotation) =>
 
-    # Show a temporary highlight so the user can see what they selected
-    for anchor in annotation.anchors
-      for page, hl of anchor.highlight
-        hl.setTemporary true
-
-    # Make the highlights permanent if the annotation is saved
-    save = =>
-      do cleanup
+      # Show a temporary highlight so the user can see what they selected
       for anchor in annotation.anchors
         for page, hl of anchor.highlight
-          hl.setTemporary false
-      # Fire annotationCreated events so that plugins can react to them
-      this.publish('annotationCreated', [annotation])
+          hl.setTemporary true
 
-    # Remove the highlights if the edit is cancelled
-    cancel = =>
-      do cleanup
-      this.deleteAnnotation(annotation)
+      # Make the highlights permanent if the annotation is saved
+      save = =>
+        do cleanup
+        for anchor in annotation.anchors
+          for page, hl of anchor.highlight
+            hl.setTemporary false
+        # Fire annotationCreated events so that plugins can react to them
+        this.publish('annotationCreated', [annotation])
 
-    # Don't leak handlers at the end
-    cleanup = =>
-      this.unsubscribe('annotationEditorHidden', cancel)
-      this.unsubscribe('annotationEditorSubmit', save)
+      # Remove the highlights if the edit is cancelled
+      cancel = =>
+        do cleanup
+        this.deleteAnnotation(annotation)
 
-    # Subscribe to the editor events
-    this.subscribe('annotationEditorHidden', cancel)
-    this.subscribe('annotationEditorSubmit', save)
+      # Don't leak handlers at the end
+      cleanup = =>
+        this.unsubscribe('annotationEditorHidden', cancel)
+        this.unsubscribe('annotationEditorSubmit', save)
 
-    # Display the editor.
-    this.showEditor(annotation, position)
+      # Subscribe to the editor events
+      this.subscribe('annotationEditorHidden', cancel)
+      this.subscribe('annotationEditorSubmit', save)
+
+      # Display the editor.
+      this.showEditor(annotation, position)
 
   # Annotator#viewer callback function. Displays the Annotator#editor in the
   # positions of the Annotator#viewer and loads the passed annotation for
@@ -852,8 +860,11 @@ class Annotator extends Delegator
       anchor.virtualize index
 
   # Re-anchor all the annotations
-  _reanchorAnnotations: =>
-    console.log "Reanchoring all annotations."
+  _reanchorAnnotations: (shouldTouch) =>
+    #console.log "Reanchoring all annotations."
+
+    # Prepare a fake filter, if necessary
+    shouldTouch ?= (anchor) -> true
 
     # Phase 1: remove all the anchors
 
@@ -861,7 +872,7 @@ class Annotator extends Delegator
     annotations = @orphans.slice()
 
     for page, anchors of @anchors  # Go over all the pages
-      for anchor in anchors.slice() # And all the anchors
+      for anchor in anchors.slice() when shouldTouch anchor # And all the anchors
         # Get the annotation
         annotation = anchor.annotation
 

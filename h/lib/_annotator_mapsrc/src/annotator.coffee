@@ -440,7 +440,7 @@ class Annotator extends Delegator
       ).fail( =>
         console.log "Could not create anchor for annotation '",
           annotation.id, "'."
-          this.orphans.push annotation        
+          this.orphans.push annotation unless annotation in this.orphans
       )
 
     dfd = Annotator.$.Deferred()
@@ -860,8 +860,11 @@ class Annotator extends Delegator
       anchor.virtualize index
 
   # Re-anchor all the annotations
-  _reanchorAnnotations: =>
-    console.log "Reanchoring all annotations."
+  _reanchorAnnotations: (shouldTouch) =>
+    #console.log "Reanchoring all annotations."
+
+    # Prepare a fake filter, if necessary
+    shouldTouch ?= (anchor) -> true
 
     # Phase 1: remove all the anchors
 
@@ -869,7 +872,7 @@ class Annotator extends Delegator
     annotations = @orphans.slice()
 
     for page, anchors of @anchors  # Go over all the pages
-      for anchor in anchors.slice() # And all the anchors
+      for anchor in anchors.slice() when shouldTouch anchor # And all the anchors
         # Get the annotation
         annotation = anchor.annotation
 

@@ -19,21 +19,61 @@ class Annotator.Guest extends Annotator
           "div.annotator-adder"
         ].join ", "
         filterAttributeChanges: (node, attributeName, oldValue, newValue) ->
-          return true unless attributeName is "class"
+          if attributeName is "style"
+            # This is a style change. We can't automatically
+            # refuse to listen, because even still changes
+            # can influence the string rendering, for example if
+            # display is modified
+            classStr = node.getAttribute "class"
+            classes = if classStr then classStr.split " " else []
+
+            # When setting the style of these classes, we don't case
+            for c in [
+              "annotorious-hint-msg"
+              "annotorious-popup-buttons"
+              "annotorious-item"
+            ]
+              return false if c in classes
+
+            # Annotorious likes to mess with the body's selection
+            # settings, which is bad for out sanity.
+            # It can actually broke d-t-m mapping,
+            # because in this selection mode, we can't use the
+            # browser's selection API at all.
+            #
+            # So we pretend that we did not hear anything...
+            if node.tagName.toLowerCase() is "body"
+              if newValue is "-webkit-user-select: none;" or
+                  oldValue is "-webkit-user-select: none;"
+                return false
+
+              console.log "Setting body style from ",
+                "'" + oldValue + "'",
+                "to",
+                "'" + newValue + "'",
+                "."
+
+          unless attributeName is "class"
+            #console.log "attr change:", attributeName, oldValue, newValue
+            #console.log "classes:", classes
+            return true
           newClasses = if newValue then newValue.split " " else []
           oldClasses = if oldValue then oldValue.split " " else []
           addedClasses = (c for c in newClasses when c not in oldClasses)
           removedClasses = (c for c in oldClasses when c not in newClasses)
           changedClasses = addedClasses.concat removedClasses
-          if changedClasses.length is 1 and changedClasses[0] in [
-            'annotator-hl-active',
-            'annotator-hl-temporary'
-            'annotator-highlights-always-on'
-          ]
-            # We are just switching some highlights. Ignore this.
-            return false
-          else
-            true
+          for change in changedClasses
+            unless change in [
+              'annotator-hl-active'
+              'annotator-hl-temporary'
+              'annotator-highlights-always-on'
+              'annotorious-item-focus'
+              'annotorious-item-unfocus'
+            ]
+              #console.log "Real class change", change
+              return true
+          # We did not see any attr change that could cause real changes.
+          false
     TextAnchors: {}
     FuzzyTextAnchors: {}
     PDF: {}

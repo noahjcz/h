@@ -185,8 +185,10 @@ class Annotator.Guest extends Annotator
 
     .bind('adderClick', =>
       @selectedTargets = @forcedLoginTargets
+      @selectedData = @forcedLoginData
       @onAdderClick @forcedLoginEvent
       delete @forcedLoginTargets
+      delete @forcedLoginData
       delete @forcedLoginEvent
     )
 
@@ -259,7 +261,10 @@ class Annotator.Guest extends Annotator
 
   onSuccessfulSelection: (event, immediate) ->
     # Store the selected targets
+    console.log event
+
     @selectedTargets = event.targets
+    @selectedData = event.annotationData
     if @tool is 'highlight'
 
       # Are we allowed to create annotations? Return false if we can't.
@@ -284,14 +289,17 @@ class Annotator.Guest extends Annotator
       #
       # Create an empty annotation manually instead
       annotation = {inject: true}
-      # Add temporaryImageID if image has any
-      if event.temporaryImageID? then annotation.temporaryImageID = event.temporaryImageID
 
-      annotation = this.setupAnnotation annotation
+      # If we have saved some data for this annotation, add it here
+      if @selectedData
+        Annotator.$.extend annotation, @selectedData
+        delete @selectedData
 
-      # Notify listeners
-      this.publish 'beforeAnnotationCreated', annotation
-      this.publish 'annotationCreated', annotation
+      this.setupAnnotation(annotation).then =>
+
+        # Notify listeners
+        this.publish 'beforeAnnotationCreated', annotation
+        this.publish 'annotationCreated', annotation
     else
       super
 
@@ -341,13 +349,17 @@ class Annotator.Guest extends Annotator
         @element.removeClass markerClass
 
   addComment: ->
-    sel = @selectedTargets   # Save the selection
-    # Nuke the selection, since we won't be using that.
+    sel = @selectedTargets   # Save the targets
+    data = @selectedData     # Save any extra data
+
+    # Nuke the targets and any extra data, since we won't be using that.
     # We will attach this to the end of the document.
     # Our override for setupAnnotation will add that highlight.
     @selectedTargets = []
+    delete @selectedData
     this.onAdderClick()     # Open editor (with 0 targets)
-    @selectedTargets = sel # restore the selection
+    @selectedTargets = sel  # restore the targets
+    @selectedData = data    # restore any extra data
 
   # Is this annotation a comment?
   isComment: (annotation) ->
@@ -386,6 +398,7 @@ class Annotator.Guest extends Annotator
     # Save the event and targets for restarting edit on forced login
     @forcedLoginEvent = event
     @forcedLoginTargets = @selectedTargets
+    @forcedLoginData = @selectedData
 
     # Hide the adder
     @adder.hide()

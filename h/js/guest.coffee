@@ -17,6 +17,7 @@ class Annotator.Guest extends Annotator
           "div.annotator-notice",
           "div.annotator-frame"
           "div.annotator-adder"
+          "div.annotorious-popup"
         ].join ", "
         filterAttributeChanges: (node, attributeName, oldValue, newValue) ->
           return true unless attributeName is "class"

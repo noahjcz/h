@@ -261,7 +261,6 @@ class Annotator.Guest extends Annotator
 
   onSuccessfulSelection: (event, immediate) ->
     # Store the selected targets
-    console.log event
 
     @selectedTargets = event.targets
     @selectedData = event.annotationData

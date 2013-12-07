@@ -208,7 +208,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     # Prepare data for Annotator about the selection
     event =
       # This is the target
-      targets: [  
+      targets: [
         source: @annotator.getHref()
         selector: [
           type: "ShapeSelector"
@@ -218,7 +218,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         ]
       ]
       # This extra info will be merged into the annotation
-      annotationData: 
+      annotationData:
         temporaryImageID: tempID
 
     # Trigger the creation of a new annotation

@@ -1,4 +1,5 @@
 $ = Annotator.$
+$ = Annotator.$
 
 class Annotator.Guest extends Annotator
   # Events to be bound on Annotator#element.
@@ -268,7 +269,6 @@ class Annotator.Guest extends Annotator
 
   onSuccessfulSelection: (event, immediate) ->
     # Store the selected targets
-
     @selectedTargets = event.targets
     @selectedData = event.annotationData
     if @tool is 'highlight'
@@ -295,8 +295,6 @@ class Annotator.Guest extends Annotator
       #
       # Create an empty annotation manually instead
       annotation = {inject: true}
-      # Add temporaryImageID if image has any
-      if event.temporaryImageID? then annotation.temporaryImageID = event.temporaryImageID
 
       # If we have saved some data for this annotation, add it here
       if @selectedData
@@ -304,7 +302,6 @@ class Annotator.Guest extends Annotator
         delete @selectedData
 
       this.setupAnnotation(annotation).then =>
-
         # Notify listeners
         this.publish 'beforeAnnotationCreated', annotation
         this.publish 'annotationCreated', annotation

@@ -156,12 +156,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     # Reacting to always-on-highlights mode
     @annotator.subscribe "setVisibleHighlights", (state) =>
       @visibleHighlights = state
-      imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
-      for hl in imageHighlights
-        hl.setVisibleHighlight state, true
-
-      for src, _ of @images
-        @annotorious.drawAnnotationHighlights src, @visibleHighlights
+      @setHighlightsVisible state
 
     # Reacting to finalizeHighlights
     @annotator.subscribe "finalizeHighlights", =>
@@ -171,6 +166,17 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         catch error
           console.log "Error: failed to draw image highlights for", src
           console.log error.stack
+
+    @annotator.subscribe "annotationsLoaded", =>
+      if @visibleHighlights then @setHighlightsVisible true
+
+  setHighlightsVisible: (state) =>
+    imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
+    for hl in imageHighlights
+      hl.setVisibleHighlight state, true
+
+    for src, _ of @images
+      @annotorious.drawAnnotationHighlights src, @visibleHighlights
 
   # This method is used by Annotator to attempt to create image anchors
   createImageAnchor: (annotation, target) =>
@@ -231,3 +237,11 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     return unless annotations.length
     @annotator.onAnchorMousedown annotations, @highlightType
     @annotator.onAnchorClick annotations, @highlightType
+
+  # This method is triggered by Annotorious to emphasize annotations
+  mouseOverAnnotations: (annotations) =>
+    @annotator.onAnchorMouseover annotations, @highlightType
+
+  # This method is triggered by Annotorious to de-emphasize annotations
+  mouseOutAnnotations: (annotations) =>
+    @annotator.onAnchorMouseout annotations, @highlightType

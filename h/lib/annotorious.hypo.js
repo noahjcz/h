@@ -7213,6 +7213,7 @@ annotorious.hypo.ImagePlugin = function(a, b, c) {
   this._imagePlugin = b;
   this._annotations = {};
   this._wrapperElement = c;
+  this._annotationsUnderthePointer = [];
   this._popup = new annotorious.hypo.Popup(a, this._eventBroker, this._wrapperElement);
   this._imageAnnotator = new annotorious.mediatypes.image.ImageAnnotator(a, this._popup);
   this._popup.addAnnotator(this._imageAnnotator);
@@ -7247,6 +7248,19 @@ annotorious.hypo.ImagePlugin = function(a, b, c) {
   var e = annotorious.events.ui.hasTouch ? this._imageAnnotator._editCanvas : this._imageAnnotator._viewCanvas;
   goog.events.listen(e, annotorious.events.ui.EventType.DOWN, function(a) {
     d.clickEvent = a
+  });
+  goog.events.listen(e, annotorious.events.ui.EventType.MOVE, function(a) {
+    console.log("Mouse over");
+    var a = annotorious.events.ui.sanitizeCoordinates(a, e), b = d._imageAnnotator.getAnnotationsAt(a.x, a.y), a = [], c;
+    for(c in b) {
+      a.push(b[c].highlight.annotation)
+    }
+    c = d._annotationsUnderthePointer.filter(function(a) {
+      return-1 == b.indexOf(a)
+    });
+    d._imagePlugin.mouseOverAnnotations(a);
+    d._imagePlugin.mouseOutAnnotations(c);
+    d._annotationsUnderthePointer = b
   });
   annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
     this._imageAnnotator.addAnnotation(a)

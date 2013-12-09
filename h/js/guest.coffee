@@ -340,12 +340,6 @@ class Annotator.Guest extends Annotator
       @panel?.notify
         method: 'setVisibleHighlights'
         params: state
-    else
-      markerClass = 'annotator-highlights-always-on'
-      if state or this.tool is 'highlight'
-        @element.addClass markerClass
-      else
-        @element.removeClass markerClass
 
   addComment: ->
     sel = @selectedTargets   # Save the targets

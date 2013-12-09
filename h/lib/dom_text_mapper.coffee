@@ -58,6 +58,23 @@ class window.DomTextMapper
 
   # ===== Public methods =======
 
+  # Change handler
+  _onChange: (event) =>
+#    @log "received change event", event
+#    @log "source", event.target
+#    @log "reason", event.reason ? "no reason"
+#    @log "data", event.data
+    @documentChanged()
+    @performUpdateOnNode event.target, false, event.data
+    @lastScanned = @timestamp()
+
+  # Change the root node, and subscribe to the events
+  _changeRootNode: (node) ->
+    @rootNode?.removeEventListener "domChange", @_onChange
+    @rootNode = node
+    @rootNode.addEventListener "domChange", @_onChange
+    node
+
   # Consider only the sub-tree beginning with the given node.
   # 
   # This will be the root node to use for all operations.

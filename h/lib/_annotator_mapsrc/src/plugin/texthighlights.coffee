@@ -118,3 +118,11 @@ class Annotator.Plugin.TextHighlights extends Annotator.Plugin
   pluginInit: ->
     # Export the text highlight class for other plugins
     Annotator.TextHighlight = TextHighlight
+
+    # Reacting to always-on-highlights mode
+    @annotator.subscribe "setVisibleHighlights", (state) =>
+      markerClass = 'annotator-highlights-always-on'
+      if state or @annotator.tool is 'highlight'
+        @annotator.element.addClass markerClass
+      else
+        @annotator.element.removeClass markerClass

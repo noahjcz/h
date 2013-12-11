@@ -182,11 +182,11 @@ class window.DomTextMapper
     # Start the clock
     startTime = @timestamp()
 
+    @log reason, ": performing update on node @ path", path,
+      "(", pathInfo.length, "characters)"
+
     # Save the selection, since we will have to restore it later.
     @saveSelection()
-
-    #@log reason, ": performing update on node @ path", path,
-    #  "(", pathInfo.length, "characters)"
 
     # Save the old and the new content, for later reference
     oldContent = pathInfo.content
@@ -267,6 +267,9 @@ class window.DomTextMapper
 
     # Restore the selection
     @restoreSelection()
+
+    @log reason, ": successfully updated node @ path", path,
+      "(", pathInfo.length, "characters)"
 
     # Return whether the corpus has changed
     corpusChanged
@@ -611,12 +614,14 @@ class window.DomTextMapper
 
   # save the original selection
   saveSelection: ->
+    sel = @rootWin.getSelection()        
+    @log "Saving selection: " + sel.rangeCount + " ranges."
+
     if @savedSelection?
       @log "Selection saved at:"
       @log @selectionSaved
       throw new Error "Selection already saved!"
-    sel = @rootWin.getSelection()        
-#    @log "Saving selection: " + sel.rangeCount + " ranges."
+
     @savedSelection = (sel.getRangeAt i) for i in [0 ... sel.rangeCount]
     switch sel.rangeCount
       when 0 then @savedSelection ?= []
@@ -628,7 +633,7 @@ class window.DomTextMapper
 
   # restore selection
   restoreSelection: ->
-#    @log "Restoring selection: " + @savedSelection.length + " ranges."
+    @log "Restoring selection: " + @savedSelection.length + " ranges."
     unless @savedSelection? then throw new Error "No selection to restore."
     sel = @rootWin.getSelection()
     sel.removeAllRanges()

@@ -318,7 +318,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
       startInfo = @annotator.domMapper.getInfoForNode normedRange.start
       startOffset = startInfo.start
-      unless startOffset
+      unless startOffset?
         throw new Error "node @ '" + startInfo.path + "' has no start field!"
       endInfo = @annotator.domMapper.getInfoForNode normedRange.end
       endOffset = endInfo.end

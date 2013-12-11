@@ -7250,7 +7250,6 @@ annotorious.hypo.ImagePlugin = function(a, b, c) {
     d.clickEvent = a
   });
   goog.events.listen(e, annotorious.events.ui.EventType.MOVE, function(a) {
-    console.log("Mouse over");
     var a = annotorious.events.ui.sanitizeCoordinates(a, e), b = d._imageAnnotator.getAnnotationsAt(a.x, a.y), a = [], c;
     for(c in b) {
       a.push(b[c].highlight.annotation)

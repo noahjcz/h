@@ -40,7 +40,7 @@ class ImageHighlight extends Annotator.Highlight
       text: @annotation.text
       id: @annotation.id
       temporaryID: @annotation.temporaryImageID
-      source: image.src
+      source: image.src.trim()
       highlight: this
 
     if @annotation.temporaryImageID
@@ -49,7 +49,7 @@ class ImageHighlight extends Annotator.Highlight
       @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
 
     @oldID = @annotation.id
-    @_image = @annotorious.getImageForAnnotation @annotoriousAnnotation
+    @_image = image
     # TODO: prepare event handlers that call @annotator's
     # onAnchorMouseover, onAnchorMouseout, onAnchorMousedown, onAnchorClick
     # methods, with the appropriate list of annotations
@@ -65,7 +65,6 @@ class ImageHighlight extends Annotator.Highlight
   # Remove all traces of this hl from the document
   removeFromDocument: ->
     @annotorious.deleteAnnotation @annotoriousAnnotation
-    # TODO: kill this highlight
 
   # Is this a temporary hl?
   isTemporary: -> @_temporary
@@ -76,7 +75,6 @@ class ImageHighlight extends Annotator.Highlight
 
   # Mark/unmark this hl as active
   setActive: (value, batch = false) ->
-    # TODO: Consider alwaysonannotation
     @active = value
     unless batch
       @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
@@ -139,13 +137,13 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @images = {}
     @visibleHighlights = false
     wrapper = @annotator.wrapper[0]
-    @imagelist = $(wrapper).find('img')
-    for image in @imagelist
+    imagelist = $(wrapper).find('img:visible')
+    for image in imagelist
       @images[image.src] = image
 
     # TODO init stuff, boot up other libraries,
     # Create the required UI, etc.
-    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this, @imagelist
+    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this, imagelist
 
     # Register the image anchoring strategy
     @annotator.anchoringStrategies.push
@@ -169,6 +167,42 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
 
     @annotator.subscribe "annotationsLoaded", =>
       if @visibleHighlights then @setHighlightsVisible true
+
+    # React to image tags changes
+    @observer = new MutationSummary
+      callback: @_onMutation
+      rootNode: wrapper
+      queries: [
+        element: 'img'
+      ]
+
+  _onMutation: (summaries) =>
+    for summary in summaries
+
+      # New images were loaded
+      summary.added.forEach (newImage) =>
+        @images[newImage.src] = newImage
+        @annotorious.addImage newImage
+
+        # Our reanchor function for this image
+        isImageAnchor = (anchor) ->
+          for t in anchor.annotation.target
+            img_selector = @annotator.findSelector t, 'ShapeSelector'
+            if img_selector?.source is newImage.src
+              return true
+          return false
+
+        @annotator._reanchorAnnotations isImageAnchor
+
+      # Removed images
+      summary.removed.forEach (oldImage) =>
+        # Remove highlights for this image
+        highlights = @annotorious.getHighlightsForImage oldImage
+        hl.anchor.remove() for hl in highlights
+
+        # Remove it from annotorious too
+        delete @images[oldImage.src]
+        @annotorious.removeImage oldImage
 
   setHighlightsVisible: (state) =>
     imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )

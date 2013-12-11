@@ -7279,16 +7279,35 @@ window.Annotorious.ImagePlugin = function() {
     this.options = c;
     this.imagePlugin = d;
     this.handlers = {};
+    this._temporalAnnotations = {};
     var f = this;
     goog.array.forEach(e, function(a) {
-      var b = function() {
-        var b = new annotorious.hypo.ImagePlugin(a, f.imagePlugin, f._el);
-        f.options.read_only && b.disableSelection();
-        f.handlers[a.src] = b
-      };
-      a.complete ? b() : a.addEventListener("load", b)
+      f.addImage(a)
     })
   }
+  a.prototype.addImage = function(a) {
+    var c = this, d = function() {
+      var d = new annotorious.hypo.ImagePlugin(a, c.imagePlugin, c._el);
+      c.options.read_only && d.disableSelection();
+      c.handlers[a.src] = d;
+      c._temporalAnnotations[a.src] && (c._temporalAnnotations[a.src].forEach(function(a) {
+        c._addAnnotationFromHighlight(a.annotation, a.image, a.shape, a.geometry, a.style)
+      }), c._temporalAnnotations[a.src] = [])
+    };
+    a.complete ? d() : a.addEventListener("load", d)
+  };
+  a.prototype.getHighlightsForImage = function(a) {
+    var c = [];
+    if(a = this.handlers[a.src]) {
+      for(var d in a._imageAnnotator._viewer._annotations) {
+        c.push(a._imageAnnotator._viewer._annotations[d].highlight)
+      }
+    }
+    return c
+  };
+  a.prototype.removeImage = function(a) {
+    this.handlers[a.src] && delete this.handlers[a.src]
+  };
   a.prototype._createShapeForAnnotation = function(a, c, d) {
     var e = null;
     "rect" == a ? e = new annotorious.shape.geom.Rectangle(c.x, c.y, c.width, c.height) : "polygon" == a && (e = new annotorious.shape.geom.Polygon(c.points));
@@ -7330,6 +7349,13 @@ window.Annotorious.ImagePlugin = function() {
     return e
   };
   a.prototype.addAnnotationFromHighlight = function(a, c, d, e, f) {
+    this.handlers[a.source] ? this._addAnnotationFromHighlight(a, c, d, e, f) : this._saveAnnotationTemporarily(a, c, d, e, f)
+  };
+  a.prototype._saveAnnotationTemporarily = function(a, c, d, e, f) {
+    this._temporalAnnotations[a.source] || (this._temporalAnnotations[a.source] = []);
+    this._temporalAnnotations[a.source].push({annotation:a, image:c, shape:d, geometry:e, style:f})
+  };
+  a.prototype._addAnnotationFromHighlight = function(a, c, d, e, f) {
     c = this.handlers[a.source];
     d = this._createShapeForAnnotation(d, e, f);
     a.shapes = [d];

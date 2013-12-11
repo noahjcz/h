@@ -16,6 +16,7 @@ goog.provide = function(a) {
   goog.exportPath_(a)
 };
 goog.setTestOnly = function(a) {
+goog.headsetTestOnly = function(a) {
   if(COMPILED && !goog.DEBUG) {
     throw a = a || "", Error("Importing test-only code into non-debug environment" + a ? ": " + a : ".");
   }
@@ -7259,6 +7260,18 @@ annotorious.hypo.ImagePlugin = function(a, b) {
   var e = annotorious.events.ui.hasTouch ? this._imageAnnotator._editCanvas : this._imageAnnotator._viewCanvas;
   goog.events.listen(e, annotorious.events.ui.EventType.DOWN, function(a) {
     d.clickEvent = a
+  });
+  goog.events.listen(e, annotorious.events.ui.EventType.MOVE, function(a) {
+    var a = annotorious.events.ui.sanitizeCoordinates(a, e), b = d._imageAnnotator.getAnnotationsAt(a.x, a.y), a = [], c;
+    for(c in b) {
+      a.push(b[c].highlight.annotation)
+    }
+    c = d._annotationsUnderthePointer.filter(function(a) {
+      return-1 == b.indexOf(a)
+    });
+    d._imagePlugin.mouseOverAnnotations(a);
+    d._imagePlugin.mouseOutAnnotations(c);
+    d._annotationsUnderthePointer = b
   });
   annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
     this._imageAnnotator.addAnnotation(a)

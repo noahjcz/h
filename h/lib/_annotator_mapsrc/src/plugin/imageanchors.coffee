@@ -198,7 +198,9 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       summary.removed.forEach (oldImage) =>
         # Remove highlights for this image
         highlights = @annotorious.getHighlightsForImage oldImage
-        hl.anchor.remove() for hl in highlights
+        for hl in highlights
+          hl.anchor.remove()
+          @annotator.orphans.push hl.annotation
 
         # Remove it from annotorious too
         delete @images[oldImage.src]

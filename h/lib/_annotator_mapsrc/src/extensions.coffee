@@ -121,3 +121,9 @@ Util.escape = (html) ->
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+
+Util.removeFromList = (element, list) ->
+  index = list.indexOf element
+  unless index is -1
+    list[index..index] = []
+  null

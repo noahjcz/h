@@ -66,8 +66,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
 
     # If we did not got a result, give up
     unless result.matches.length
- #     console.log "Fuzzy matching did not return any results. Giving up on two-phase strategy."
-      dfd.reject "fuzzy match found no result"
+      dfd.reject "fuzzy match found no result for '" + quote + "' @ " + expectedStart + "."
       return dfd.promise()
 
     # here is our result
@@ -133,8 +132,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
 
     # If we did not got a result, give up
     unless result.matches.length
-#      console.log "Fuzzy matching did not return any results. Giving up on one-phase strategy."
-      dfd.reject "fuzzy found no match"
+      dfd.reject "fuzzy found no match for '" + quote + "' @ " + expectedStart
       return dfd.promise()
 
     # here is our result

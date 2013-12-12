@@ -309,7 +309,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       range = @Annotator.Range.sniff selector
       normedRange = range.normalize @annotator.wrapper[0]
     catch error
-      dfd.reject "failed to normalize range"
+      dfd.reject "failed to normalize range: " + error.message
       return dfd.promise()
 
     # Get the text of this range

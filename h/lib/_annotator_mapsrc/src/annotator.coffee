@@ -356,6 +356,8 @@ class Annotator extends Delegator
 
       # Run this strategy
       iteration.then( (anchor) => # This strategy has worked.
+#        console.log "Anchoring strategy '" + s.name + "' has succeeded:",
+#          anchor
 
         # We can now resolve the promise
         promise.resolve anchor
@@ -423,18 +425,29 @@ class Annotator extends Delegator
     # Get a promise to anchor this annotation
     this.anchorAnnotation annotation
 
+  # Find the anchor belonging to a given target
+  _findAnchorForTarget: (annotation, target) ->
+    for anchor in annotation.anchors when anchor.target is target
+      return anchor
+    return null
+
+  # Decides whether or not a given target is anchored
+  _hasAnchorForTarget: (annotation, target) ->
+    anchor = this._findAnchorForTarget annotation, target
+    anchor?
+
   # Creates the necessary anchors for the given annotation
   anchorAnnotation: (annotation) ->
 
     annotation.quote = (null for t in annotation.target)
-    annotation.anchors = []
+    annotation.anchors ?= []
 
-    promises = for t in annotation.target
+    promises = for t in annotation.target when not this._hasAnchorForTarget annotation, t
 
       index = annotation.target.indexOf t
 
       # Create an anchor for this target
-      this.createAnchor(annotation, t).then( (anchor) =>
+      this.createAnchor(annotation, t).then (anchor) =>
         # We have an anchor
         annotation.quote[index] = t.quote = anchor.quote
         t.diffHTML = anchor.diffHTML
@@ -451,15 +464,19 @@ class Annotator extends Delegator
         # Realizing the anchor
         anchor.realize()
 
-      ).fail( =>
-        console.log "Could not create anchor for annotation '",
-          annotation.id, "'."
-          this.orphans.push annotation unless annotation in this.orphans
-      )
-
     dfd = Annotator.$.Deferred()
 
     Annotator.$.when(promises...).always =>
+      # Is this an orphan?
+      if (annotation.target?.length) and  # If there are targets,
+          not (annotation.anchors?.length) # but no anchors, then
+        # This is an orphan.
+        console.log "Could not create anchor for annotation", annotation.id
+        this.orphans.push annotation unless annotation in this.orphans
+      else
+        # This is not an orphan.
+        Util.removeFromList annotation, this.orphans
+
       # Join all the quotes into one string.
       annotation.quote = annotation.quote.filter((q)->q?).join ' / '
       dfd.resolve annotation
@@ -500,11 +517,9 @@ class Annotator extends Delegator
         # There were some anchors.
         for a in annotation.anchors
           a.remove()
-      else
-        # No anchors, this was an orphan. Remove from orphan list.
-        i = this.orphans.indexOf annotation
-        if i isnt -1
-          this.orphans[i..i] = []
+
+    # If this happened to be an orphan, remove to the list.
+    Util.removeFromList annotation, this.orphans
 
     this.publish('annotationDeleted', [annotation])
     annotation
@@ -683,7 +698,7 @@ class Annotator extends Delegator
   #            newly created annotation
   #   pageX and pageY: if the adder button is shown, use there coordinates
   #
-  # immadiate - should we show the adder button, or should be proceed
+  # immediate - should we show the adder button, or should be proceed
   #             to create the annotation/highlight immediately ?
   #
   # returns false if the creation of annotations is forbidden at the moment,

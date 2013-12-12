@@ -81,17 +81,14 @@ class Anchor
       @virtualize index
       anchors = @annotator.anchors[index]
       # Remove the anchor from the list
-      i = anchors.indexOf this
-      anchors[i..i] = []
+      Util.removeFromList this, anchors
       # Kill the list if it's empty
       delete @annotator.anchors[index] unless anchors.length
 
     # Should we remove this anchor from the annotation, too?
     if removeFromAnnotation
-      anchors = @annotation.anchors
       # Remove the anchor from the list
-      i = anchors.indexOf this
-      anchors[i..i] = []
+      Util.removeFromList this, @annotation.anchors
 
   # This is called when the underlying Annotator has been udpated
   annotationUpdated: ->

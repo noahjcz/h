@@ -247,7 +247,7 @@ class Annotator.Guest extends Annotator
 
       # If we have saved some data for this annotation, add it here
       if @selectedData
-        Annotator.$.extend annotation, @selectedData
+        @Annotator.$.extend annotation, @selectedData
         delete @selectedData
 
       this.setupAnnotation(annotation).then =>

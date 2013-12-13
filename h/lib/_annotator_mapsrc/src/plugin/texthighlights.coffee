@@ -65,8 +65,8 @@ class TextHighlight extends Annotator.Highlight
     # may be the odd abandoned whitespace node in a paragraph that is skipped
     # but better than breaking table layouts.
 
-    for node in normedRange.textNodes() when not white.test node.nodeValue
-      @$(node).wrapAll(hl).parent().show()[0]
+    nodes = @$(normedRange.textNodes()).filter((i) -> not white.test @nodeValue)
+    nodes.wrap(hl).parent().show().toArray()
 
   constructor: (anchor, pageIndex, normedRange) ->
     super anchor, pageIndex

@@ -293,23 +293,29 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Verify a text position anchor
   verifyTextAnchor: (anchor, reason, data) =>
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
     # When we don't have d-t-m, we might create TextRangeAnchors.
     # Lets' handle that first!"
     if anchor instanceof @Annotator.TextRangeAnchor
       # Basically, we have no idea
-      false
+      dfd.resolve false # we don't trust in text ranges too much
+      return dfd.promise()
 
     # What else could this be?
     unless anchor instanceof @Annotator.TextPositionAnchor
       # This should not happen. No idea
       console.log "Hey, how come that I don't know anything about",
         "this kind of anchor?", anchor
-      false
+      dfd.resolve false # we have no idea what this is
+      return dfd.promise()
 
     # OK, now we know that we have TextPositionAnchor.
 
-    # We don't care until the corpus has changed
-    return true unless reason is "corpus change"
+    unless reason is "corpus change"
+      dfd.resolve true # We don't care until the corpus has changed
+      return dfd.promise()
 
     # Get the current quote
     corpus = @annotator.domMapper.getCorpus()
@@ -317,7 +323,8 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     currentQuote = @annotator.normalizeString content
 
     # Compare it with the stored one
-    return currentQuote is anchor.quote
+    dfd.resolve (currentQuote is anchor.quote)
+    dfd.promise()
 
   # Create and anchor using the saved Range selector.
   # The quote is verified.

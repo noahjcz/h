@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-12-13 17:36:16Z
+** Built at: 2013-12-13 19:17:37Z
 */
 
 
@@ -50,7 +50,13 @@
           options = $.extend({}, defaultOptions, _this.options.options);
           mapper = new window.DomTextMapper(options);
           options.rootNode.addEventListener("corpusChange", function() {
-            return _this.annotator._reanchorAllAnnotations("corpus change", null);
+            var t0;
+            t0 = mapper.timestamp();
+            return _this.annotator._reanchorAllAnnotations("corpus change").then(function() {
+              var t1;
+              t1 = mapper.timestamp();
+              return console.log("corpus change -> refreshed text annotations.", "Time used: ", t1 - t0, "ms");
+            });
           });
           mapper.scan("we are initializing d-t-m");
           return mapper;

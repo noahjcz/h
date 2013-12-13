@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-12-13 17:36:20Z
+** Built at: 2013-12-13 18:47:49Z
 */
 
 
@@ -277,21 +277,26 @@
     };
 
     TextAnchors.prototype.verifyTextAnchor = function(anchor, reason, data) {
-      var content, corpus, currentQuote;
+      var content, corpus, currentQuote, dfd;
+      dfd = this.$.Deferred();
       if (anchor instanceof this.Annotator.TextRangeAnchor) {
-        false;
+        dfd.resolve(false);
+        return dfd.promise();
       }
       if (!(anchor instanceof this.Annotator.TextPositionAnchor)) {
         console.log("Hey, how come that I don't know anything about", "this kind of anchor?", anchor);
-        false;
+        dfd.resolve(false);
+        return dfd.promise();
       }
       if (reason !== "corpus change") {
-        return true;
+        dfd.resolve(true);
+        return dfd.promise();
       }
       corpus = this.annotator.domMapper.getCorpus();
       content = corpus.slice(anchor.start, +(anchor.end - 1) + 1 || 9e9).trim();
       currentQuote = this.annotator.normalizeString(content);
-      return currentQuote === anchor.quote;
+      dfd.resolve(currentQuote === anchor.quote);
+      return dfd.promise();
     };
 
     TextAnchors.prototype.createFromRangeSelector = function(annotation, target) {

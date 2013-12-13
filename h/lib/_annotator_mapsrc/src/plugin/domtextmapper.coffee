@@ -24,7 +24,11 @@ class Annotator.Plugin.DomTextMapper extends Annotator.Plugin
         options = $.extend {}, defaultOptions, @options.options
         mapper = new window.DomTextMapper options
         options.rootNode.addEventListener "corpusChange", =>
-          @annotator._reanchorAllAnnotations "corpus change", null
+          t0 = mapper.timestamp()
+          @annotator._reanchorAllAnnotations("corpus change").then ->
+            t1 = mapper.timestamp()
+            console.log "corpus change -> refreshed text annotations.",
+              "Time used: ", t1-t0, "ms"
         mapper.scan "we are initializing d-t-m"
         mapper
 

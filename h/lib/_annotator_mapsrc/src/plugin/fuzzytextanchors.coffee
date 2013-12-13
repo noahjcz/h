@@ -31,13 +31,20 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
 
   # Verify a text position anchor
   verifyFuzzyTextAnchor: (anchor, reason, data) =>
-    # We don't care until the corpus has changed
-    return true unless reason is "corpus change"
+    # Prepare the deferred object
+    dfd = @$.Deferred()
 
-    # If we have a corpus change, then we have no idea whether this is
-    # still the best match, so let's conclude that this anchor is no longer
-    # valid
-    false
+    if reason is "corpus change"
+      # If we have a corpus change, then we have no idea whether this is
+      # still the best match, so let's conclude that this anchor is no longer
+      # valid
+      dfd.resolve false
+
+    else
+      dfd.resolve true  # We don't care until the corpus has changed
+
+    # Return the promise
+    dfd.promise()
 
   twoPhaseFuzzyMatching: (annotation, target) =>
     # Prepare the deferred object

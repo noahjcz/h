@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-12-13 17:35:52Z
+** Built at: 2013-12-13 19:18:36Z
 */
 
 
@@ -918,11 +918,29 @@
     };
 
     Anchor.prototype.verify = function(reason, data) {
-      var valid;
-      valid = this.strategy.verify ? this.strategy.verify(this, reason, data) : (console.log("Can't verify this", this.constructor.name, "because the", "'" + this.strategy.name + "'", "strategy responsible for creating this anchor did not specify a verify function."), false);
-      if (!valid) {
-        return this.remove();
+      var dfd, error,
+        _this = this;
+      dfd = Annotator.$.Deferred();
+      if (this.strategy.verify) {
+        try {
+          this.strategy.verify(this, reason, data).then(function(valid) {
+            if (!valid) {
+              _this.remove();
+            }
+            return dfd.resolve();
+          });
+        } catch (_error) {
+          error = _error;
+          console.log("Error while executing", this.constructor.name, "'s verify method:", error.stack);
+          this.remove();
+          dfd.resolve();
+        }
+      } else {
+        console.log("Can't verify this", this.constructor.name, "because the", "'" + this.strategy.name + "'", "strategy (which was responsible for creating this anchor)", "did not specify a verify function.");
+        this.remove();
+        dfd.resolve();
       }
+      return dfd.promise();
     };
 
     Anchor.prototype.annotationUpdated = function() {
@@ -1834,32 +1852,33 @@
     };
 
     Annotator.prototype._verifyAllAnchors = function(reason, data) {
-      var anchor, anchors, page, _ref1, _results;
+      var anchor, anchors, dfd, page, promises, _k, _len2, _ref1, _ref2, _ref3;
       if (reason == null) {
         reason = "no reason in particular";
       }
       if (data == null) {
         data = null;
       }
+      dfd = Annotator.$.Deferred();
+      promises = [];
       _ref1 = this.anchors;
-      _results = [];
       for (page in _ref1) {
         anchors = _ref1[page];
-        _results.push((function() {
-          var _k, _len2, _ref2, _results1;
-          _ref2 = anchors.slice();
-          _results1 = [];
-          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-            anchor = _ref2[_k];
-            _results1.push(anchor.verify(reason, data));
-          }
-          return _results1;
-        })());
+        _ref2 = anchors.slice();
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          anchor = _ref2[_k];
+          promises.push(anchor.verify(reason, data));
+        }
       }
-      return _results;
+      (_ref3 = Annotator.$).when.apply(_ref3, promises).always(function() {
+        return dfd.resolve();
+      });
+      return dfd.promise();
     };
 
     Annotator.prototype._reanchorAllAnnotations = function(reason, data, targetFilter) {
+      var dfd,
+        _this = this;
       if (reason == null) {
         reason = "no reason in particular";
       }
@@ -1869,8 +1888,13 @@
       if (targetFilter == null) {
         targetFilter = null;
       }
-      this._verifyAllAnchors(reason, data);
-      return this._anchorAllAnnotations(targetFilter);
+      dfd = Annotator.$.Deferred();
+      this._verifyAllAnchors(reason, data).then(function() {
+        return _this._anchorAllAnnotations(targetFilter).then(function() {
+          return dfd.resolve();
+        });
+      });
+      return dfd.promise();
     };
 
     Annotator.prototype.onAnchorMouseover = function(annotations, highlightType) {

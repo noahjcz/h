@@ -932,20 +932,35 @@ class Annotator extends Delegator
   _verifyAllAnchors: (reason = "no reason in particular", data = null) =>
 #    console.log "Verifying all anchors, because of", reason, data
 
+    # The deferred object we will use for timing
+    dfd = Annotator.$.Deferred()
+
+    promises = [] # Let's collect promises from all anchors
+
     for page, anchors of @anchors     # Go over all the pages
       for anchor in anchors.slice()   # and all the anchors
-        anchor.verify reason, data    # and tell them to verify themselves
+        promises.push anchor.verify reason, data    # and verify them
+
+    # Wait for all attempts for finish/fail
+    Annotator.$.when(promises...).always -> dfd.resolve()
+
+    # Return a promise
+    dfd.promise()
 
   # Re-anchor all the annotations
   _reanchorAllAnnotations: (reason = "no reason in particular",
       data = null, targetFilter = null
   ) =>
 
-    # remove the invalidated anchors
-    this._verifyAllAnchors reason, data
+    # The deferred object we will use for timing
+    dfd = Annotator.$.Deferred()
 
-    # re-create missing anchors
-    this._anchorAllAnnotations targetFilter
+    this._verifyAllAnchors(reason, data)     # Verify all anchors
+    .then => this._anchorAllAnnotations(targetFilter) # re-create anchors
+    .then -> dfd.resolve()   # we are done
+
+    # Return a promise
+    dfd.promise()
 
   onAnchorMouseover: (annotations, highlightType) ->
     #console.log "Mouse over annotations:", annotations

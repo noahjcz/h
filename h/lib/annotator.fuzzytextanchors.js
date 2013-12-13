@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-12-13 17:36:23Z
+** Built at: 2013-12-13 19:18:08Z
 */
 
 
@@ -57,10 +57,14 @@
     };
 
     FuzzyTextAnchors.prototype.verifyFuzzyTextAnchor = function(anchor, reason, data) {
-      if (reason !== "corpus change") {
-        return true;
+      var dfd;
+      dfd = this.$.Deferred();
+      if (reason === "corpus change") {
+        dfd.resolve(false);
+      } else {
+        dfd.resolve(true);
       }
-      return false;
+      return dfd.promise();
     };
 
     FuzzyTextAnchors.prototype.twoPhaseFuzzyMatching = function(annotation, target) {

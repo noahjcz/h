@@ -82,7 +82,8 @@ class Anchor
           @highlight[page].removeFromDocument()
           console.log "Removed broken HL from page", page
         catch hlError
-          console.log "Could not remove broken HL from page", page, ":", hlError.stack
+          console.log "Could not remove broken HL from page", page, ":",
+            hlError.stack
 
   # Remove the highlights for the given set of pages
   virtualize: (pageIndex) =>
@@ -132,15 +133,31 @@ class Anchor
 
   # Check if this anchor is still valid. If not, remove it.
   verify: (reason, data) ->
-    valid = if @strategy.verify # Do we have a way to verify this anchor?
-      @strategy.verify this, reason, data
-    else
+    # Create a Deferred object
+    dfd = Annotator.$.Deferred()
+
+    # Do we have a way to verify this anchor?
+    if @strategy.verify # We have a verify function to call.
+      try
+        @strategy.verify(this, reason, data).then (valid) =>
+          @remove() unless valid        # Remove the anchor
+          dfd.resolve()                 # Mark this as resolved
+      catch error
+        # The verify method crashed. How lame.
+        console.log "Error while executing", @constructor.name,
+          "'s verify method:", error.stack
+        @remove()         # Remove the anchor
+        dfd.resolve()     # Mark this as resolved
+    else # No verify method specified
       console.log "Can't verify this", @constructor.name, "because the",
         "'" + @strategy.name + "'",
-        "strategy responsible for creating this anchor did not specify a verify function."
-      false
+        "strategy (which was responsible for creating this anchor)"
+        "did not specify a verify function."
+      @remove()         # Remove the anchor
+      dfd.resolve()     # Mark this as resolved
 
-    @remove() unless valid
+    # Return the promise
+    dfd.promise()
 
   # Check if this anchor is still valid. If not, remove it.
   # This is called when the underlying annotation has been updated

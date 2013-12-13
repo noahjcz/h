@@ -58,8 +58,8 @@ Range.nodeFromXPath = (xpath, root=document) ->
       # See http://www.w3.org/TR/DOM-Level-3-XPath/xpath.html#XPathException
       # This does not necessarily make any sense, but this what we see
       # happening.
-      console.log "XPath evaluation failed."
-      console.log "Trying fallback..."
+#      console.log "XPath evaluation failed."
+#      console.log "Trying fallback..."
       # We have a an 'evaluator' for the really simple expressions that
       # should work for the simple expressions we generate.
       Util.nodeFromXPath(xp, root)

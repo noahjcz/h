@@ -121,8 +121,9 @@ class Annotator extends Delegator
     # Create adder
     this.adder = $(this.html.adder).appendTo(@wrapper).hide()
 
-    # Create bucket for orphan annotations
+    # Create buckets for orphan and half-orphan annotations
     this.orphans = []
+    this.halfOrphans = []
 
   # Initializes the available document access strategies
   _setupDocumentAccessStrategies: ->
@@ -352,10 +353,15 @@ class Annotator extends Delegator
 
     try
       # Get a promise from this strategy
-      iteration = s.code annotation, target
+      iteration = s.create annotation, target
 
       # Run this strategy
       iteration.then( (anchor) => # This strategy has worked.
+#        console.log "Anchoring strategy '" + s.name + "' has succeeded:",
+#          anchor
+
+        # Note the name of the successful strategy
+        anchor.strategy = s
 
         # We can now resolve the promise
         promise.resolve anchor
@@ -373,7 +379,7 @@ class Annotator extends Delegator
   # Try to find the right anchoring point for a given target
   #
   # Returns a promise, which will be resolved with an Anchor object
-  createAnchor: (annotation, target) ->
+  _createAnchor: (annotation, target) ->
     unless target?
       throw new Error "Trying to find anchor for null target!"
     #console.log "Trying to find anchor for target: ", target
@@ -420,51 +426,103 @@ class Annotator extends Delegator
     unless annotation.target?
       throw new Error "Can not run setupAnnotation(). No target or selection available."
 
-    # Get a promise to anchor this annotation
-    this.anchorAnnotation annotation
+    # In the lonely world of annotations, everybody is born as an orphan.
+    this.orphans.push annotation
 
-  # Creates the necessary anchors for the given annotation
-  anchorAnnotation: (annotation) ->
+    # In order to change this, let's try to anchor this annotation!
+    this._anchorAnnotation annotation
 
-    annotation.quote = (null for t in annotation.target)
-    annotation.anchors = []
+  # Find the anchor belonging to a given target
+  _findAnchorForTarget: (annotation, target) ->
+    for anchor in annotation.anchors when anchor.target is target
+      return anchor
+    return null
 
-    promises = for t in annotation.target
+  # Decides whether or not a given target is anchored
+  _hasAnchorForTarget: (annotation, target) ->
+    anchor = this._findAnchorForTarget annotation, target
+    anchor?
+
+  # Tries to create any missing anchors for the given annotation
+  # Optionally accepts a filter to test targetswith
+  _anchorAnnotation: (annotation, targetFilter, publishEvent = false) ->
+
+    # Supply a dummy target filter, if needed
+    targetFilter ?= (target) -> true
+
+    # Build a filter to test targets with.
+    shouldDo = (target) =>
+      (not this._hasAnchorForTarget annotation, target) and # has no ancher
+        (targetFilter target)  # Passes the optional filter
+
+    annotation.quote = (t.quote for t in annotation.target)
+    annotation.anchors ?= []
+
+    # Collect promises for all the involved targets
+    promises = for t in annotation.target when shouldDo t
 
       index = annotation.target.indexOf t
 
       # Create an anchor for this target
-      this.createAnchor(annotation, t).then( (anchor) =>
+      this._createAnchor(annotation, t).then (anchor) =>
         # We have an anchor
-        annotation.quote[index] = t.quote = anchor.quote
-        t.diffHTML = anchor.diffHTML
-        t.diffCaseOnly = anchor.diffCaseOnly
-
-        # Store this anchor for the annotation
-        annotation.anchors.push anchor
-
-        # Store the anchor for all involved pages
-        for pageIndex in [anchor.startPage .. anchor.endPage]
-          @anchors[pageIndex] ?= []
-          @anchors[pageIndex].push anchor
+        annotation.quote[index] = t.quote
 
         # Realizing the anchor
         anchor.realize()
 
-      ).fail( =>
-        console.log "Could not create anchor for annotation '",
-          annotation.id, "'."
-          this.orphans.push annotation unless annotation in this.orphans
-      )
-
+    # The deferred object we will use for timing
     dfd = Annotator.$.Deferred()
 
     Annotator.$.when(promises...).always =>
+
       # Join all the quotes into one string.
       annotation.quote = annotation.quote.filter((q)->q?).join ' / '
+
+      # Did we actually manage to anchor anything?
+      if "resolved" in (p.state() for p in promises)
+
+        if this.changedAnnotations? # Are we collecting anchoring changes?
+          this.changedAnnotations.push annotation  # Add this annotation
+
+        if publishEvent  # Are we supposed to publish an event?
+          this.publish "annotationsLoaded", [[annotation]]
+
+      # We are done!
       dfd.resolve annotation
 
+    # Return a promise
     dfd.promise()
+
+  # Tries to create any missing anchors for all annotations
+  _anchorAllAnnotations: (targetFilter) ->
+    # The deferred object we will use for timing
+    dfd = Annotator.$.Deferred()
+
+    # We have to consider the orphans and half-orphans, since they are
+    # the onees with missing annotations
+    annotations = this.halfOrphans.concat this.orphans
+
+    # Initiate the collection of changes
+    this.changedAnnotations = []
+
+    # Get promises for anchoring all annotations
+    promises = for annotation in annotations
+      this._anchorAnnotation annotation, targetFilter
+
+    # Wait for all attempts for finish/fail
+    Annotator.$.when(promises...).always =>
+
+      # send out notifications and updates
+      this.publish "annotationsLoaded", [this.changedAnnotations]
+      delete this.changedAnnotations
+
+      # When all is said and done
+      dfd.resolve()
+
+    # Return a promise
+    dfd.promise()
+
 
   # Public: Publishes the 'beforeAnnotationUpdated' and 'annotationUpdated'
   # events. Listeners wishing to modify an updated annotation should subscribe
@@ -495,16 +553,13 @@ class Annotator extends Delegator
   #
   # Returns deleted annotation.
   deleteAnnotation: (annotation) ->
-    if annotation.anchors?
-      if annotation.anchors.length
-        # There were some anchors.
-        for a in annotation.anchors
-          a.remove()
-      else
-        # No anchors, this was an orphan. Remove from orphan list.
-        i = this.orphans.indexOf annotation
-        if i isnt -1
-          this.orphans[i..i] = []
+    if annotation.anchors?                     # If we have anchors,
+      a.remove() for a in annotation.anchors   # remove them
+
+    # By the time we delete them, every annotation is an orphan,
+    # (since we have just deleted all of it's anchors),
+    # so time to remove it from the orphan list.
+    Util.removeFromSet annotation, this.orphans
 
     this.publish('annotationDeleted', [annotation])
     annotation
@@ -873,37 +928,24 @@ class Annotator extends Delegator
     for anchor in @anchors[index] ? []
       anchor.virtualize index
 
+  # Tell all anchors to verify themselves
+  _verifyAllAnchors: (reason = "no reason in particular", data = null) =>
+#    console.log "Verifying all anchors, because of", reason, data
+
+    for page, anchors of @anchors     # Go over all the pages
+      for anchor in anchors.slice()   # and all the anchors
+        anchor.verify reason, data    # and tell them to verify themselves
+
   # Re-anchor all the annotations
-  _reanchorAnnotations: (shouldTouch) =>
-    #console.log "Reanchoring all annotations."
+  _reanchorAllAnnotations: (reason = "no reason in particular",
+      data = null, targetFilter = null
+  ) =>
 
-    # Prepare a fake filter, if necessary
-    shouldTouch ?= (anchor) -> true
+    # remove the invalidated anchors
+    this._verifyAllAnchors reason, data
 
-    # Phase 1: remove all the anchors
-
-    # We will collect all the annotations, starting from the orphan ones
-    annotations = @orphans.slice()
-
-    for page, anchors of @anchors  # Go over all the pages
-      for anchor in anchors.slice() when shouldTouch anchor # And all the anchors
-        # Get the annotation
-        annotation = anchor.annotation
-
-        # Add this annotation to our collection
-        annotations.push annotation unless annotation in annotations
-
-        # Remove this anchor from both the pages and the annotation
-        anchor.remove true
-
-    # Phase 2: re-anchor all annotations
-
-    for annotation in annotations # Go over all annotations
-      this.anchorAnnotation annotation # and anchor them
-
-    # Phase 3: send out notifications and updates
-
-    this.publish "annotationsLoaded", [annotations.slice()]
+    # re-create missing anchors
+    this._anchorAllAnnotations targetFilter
 
   onAnchorMouseover: (annotations, highlightType) ->
     #console.log "Mouse over annotations:", annotations

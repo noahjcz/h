@@ -18,14 +18,26 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
       # This can handle document structure changes,
       # and also content changes.
       name: "two-phase fuzzy"
-      code: this.twoPhaseFuzzyMatching
+      create: @twoPhaseFuzzyMatching
+      verify: @verifyFuzzyTextAnchor
 
     @annotator.anchoringStrategies.push
       # Naive fuzzy text matching strategy. (Using only the quote.)
       # This can handle document structure changes,
       # and also content changes.
       name: "one-phase fuzzy"
-      code: this.fuzzyMatching
+      create: @fuzzyMatching
+      verify: @verifyFuzzyTextAnchor
+
+  # Verify a text position anchor
+  verifyFuzzyTextAnchor: (anchor, reason, data) =>
+    # We don't care until the corpus has changed
+    return true unless reason is "corpus change"
+
+    # If we have a corpus change, then we have no idea whether this is
+    # still the best match, so let's conclude that this anchor is no longer
+    # valid
+    false
 
   twoPhaseFuzzyMatching: (annotation, target) =>
     # Prepare the deferred object
@@ -66,8 +78,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
 
     # If we did not got a result, give up
     unless result.matches.length
- #     console.log "Fuzzy matching did not return any results. Giving up on two-phase strategy."
-      dfd.reject "fuzzy match found no result"
+      dfd.reject "fuzzy match found no result for '" + quote + "' @ " + expectedStart + "."
       return dfd.promise()
 
     # here is our result
@@ -133,8 +144,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
 
     # If we did not got a result, give up
     unless result.matches.length
-#      console.log "Fuzzy matching did not return any results. Giving up on one-phase strategy."
-      dfd.reject "fuzzy found no match"
+      dfd.reject "fuzzy found no match for '" + quote + "' @ " + expectedStart
       return dfd.promise()
 
     # here is our result

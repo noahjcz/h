@@ -24,10 +24,7 @@ class Annotator.Plugin.DomTextMapper extends Annotator.Plugin
         options = $.extend {}, defaultOptions, @options.options
         mapper = new window.DomTextMapper options
         options.rootNode.addEventListener "corpusChange", =>
-          @annotator._reanchorAnnotations @_shouldReanchor
+          @annotator._reanchorAllAnnotations "corpus change", null
         mapper.scan "we are initializing d-t-m"
         mapper
 
-  _shouldReanchor: (anchor) =>
-    anchor instanceof @Annotator.TextRangeAnchor or
-      anchor instanceof @Annotator.TextPositionAnchor

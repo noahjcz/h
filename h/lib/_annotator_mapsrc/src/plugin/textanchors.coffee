@@ -94,14 +94,16 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     @annotator.anchoringStrategies.push
       # Simple strategy based on DOM Range
       name: "range"
-      code: @createFromRangeSelector
+      create: @createFromRangeSelector
+      verify: @verifyTextAnchor
 
     @annotator.anchoringStrategies.push
       # Position-based strategy. (The quote is verified.)
       # This can handle document structure changes,
       # but not the content changes.
       name: "position"
-      code: @createFromPositionSelector
+      create: @createFromPositionSelector
+      verify: @verifyTextAnchor
 
     # Register the event handlers required for creating a selection
     $(@annotator.wrapper).bind({
@@ -289,6 +291,34 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Strategies used for creating anchors from saved data
 
+  # Verify a text position anchor
+  verifyTextAnchor: (anchor, reason, data) =>
+    # When we don't have d-t-m, we might create TextRangeAnchors.
+    # Lets' handle that first!"
+    if anchor instanceof @Annotator.TextRangeAnchor
+      # Basically, we have no idea
+      false
+
+    # What else could this be?
+    unless anchor instanceof @Annotator.TextPositionAnchor
+      # This should not happen. No idea
+      console.log "Hey, how come that I don't know anything about",
+        "this kind of anchor?", anchor
+      false
+
+    # OK, now we know that we have TextPositionAnchor.
+
+    # We don't care until the corpus has changed
+    return true unless reason is "corpus change"
+
+    # Get the current quote
+    corpus = @annotator.domMapper.getCorpus()
+    content = corpus[ anchor.start .. anchor.end-1 ].trim()
+    currentQuote = @annotator.normalizeString content
+
+    # Compare it with the stored one
+    return currentQuote is anchor.quote
+
   # Create and anchor using the saved Range selector.
   # The quote is verified.
   createFromRangeSelector: (annotation, target) =>
@@ -309,7 +339,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       range = @Annotator.Range.sniff selector
       normedRange = range.normalize @annotator.wrapper[0]
     catch error
-      dfd.reject "failed to normalize range"
+      dfd.reject "failed to normalize range: " + error.message
       return dfd.promise()
 
     # Get the text of this range

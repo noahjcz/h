@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-12-12 16:51:35Z
+** Built at: 2013-12-13 15:28:00Z
 */
 
 
@@ -73,6 +73,12 @@
       };
       if (this.annotation.temporaryImageID) {
         this.annotoriousAnnotation = this.annotorious.updateAnnotationAfterCreatingAnnotatorHighlight(this.annotoriousAnnotation);
+        if (this.annotoriousAnnotation._bad != null) {
+          this.annotation.temporaryImageID = void 0;
+          this.annotorious.addAnnotationFromHighlight(this.annotoriousAnnotation, image, shape, geometry, this.defaultStyle);
+          this.annotoriousAnnotation.temporaryID = void 0;
+          this.annotoriousAnnotation._bad = void 0;
+        }
       } else {
         this.annotorious.addAnnotationFromHighlight(this.annotoriousAnnotation, image, shape, geometry, this.defaultStyle);
       }

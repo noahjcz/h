@@ -7346,6 +7346,7 @@ window.Annotorious.ImagePlugin = function() {
         break
       }
     }
+    e || (e = a, e._bad = !0);
     return e
   };
   a.prototype.addAnnotationFromHighlight = function(a, c, d, e, f) {

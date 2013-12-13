@@ -45,6 +45,13 @@ class ImageHighlight extends Annotator.Highlight
 
     if @annotation.temporaryImageID
       @annotoriousAnnotation = @annotorious.updateAnnotationAfterCreatingAnnotatorHighlight @annotoriousAnnotation
+      # Sometimes (like forced login) there is no @annotorious annotation
+      # Let's recreate this annotation
+      if @annotoriousAnnotation._bad?
+        @annotation.temporaryImageID = undefined
+        @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
+        @annotoriousAnnotation.temporaryID = undefined
+        @annotoriousAnnotation._bad = undefined
     else
       @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
 

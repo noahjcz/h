@@ -166,7 +166,7 @@ angular_sanitize = Uglify(
 
 # Annotorious
 annotorious = Bundle(
-    Uglify('h:lib/annotorious.hypo.js', output='lib/annotorious.min.js'),
+    Uglify('h:lib/annotorious.okfn.js', output='lib/annotorious.min.js'),
     Uglify('h:lib/fancy_box_selector.js', output='lib/annotorious-fancy_box.min.js'),
     CSS('h:lib/annotorious.css', output='lib/annotorious.min.css')
 )

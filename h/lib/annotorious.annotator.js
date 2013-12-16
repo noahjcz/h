@@ -7150,8 +7150,8 @@ annotorious.mediatypes.image.ImageAnnotator.prototype.addSelector = annotorious.
 annotorious.mediatypes.image.ImageAnnotator.prototype.fireEvent = annotorious.mediatypes.image.ImageAnnotator.prototype.fireEvent;
 annotorious.mediatypes.image.ImageAnnotator.prototype.setCurrentSelector = annotorious.mediatypes.image.ImageAnnotator.prototype.setCurrentSelector;
 annotorious.mediatypes.image.ImageAnnotator.prototype.toItemCoordinates = annotorious.mediatypes.image.ImageAnnotator.prototype.toItemCoordinates;
-annotorious.hypo = {};
-annotorious.hypo.Popup = function(a, b, c) {
+annotorious.okfn = {};
+annotorious.okfn.Popup = function(a, b, c) {
   this.element = goog.soy.renderAsElement(annotorious.templates.annotator.popup);
   this._text = goog.dom.query(".annotorious-popup-text", this.element)[0];
   this._image = a;
@@ -7167,14 +7167,14 @@ annotorious.hypo.Popup = function(a, b, c) {
   goog.style.setOpacity(this.element, 0);
   goog.style.setStyle(this.element, "pointer-events", "none")
 };
-annotorious.hypo.Popup.prototype.show = function(a, b) {
+annotorious.okfn.Popup.prototype.show = function(a, b) {
   this.clearHideTimer();
   b && this.setPosition(b);
   a && this.setAnnotation(a);
   goog.style.setOpacity(this.element, 0.9);
   goog.style.setStyle(this.element, "pointer-events", "auto")
 };
-annotorious.hypo.Popup.prototype.startHideTimer = function() {
+annotorious.okfn.Popup.prototype.startHideTimer = function() {
   this._cancelHide = !1;
   if(!this._popupHideTimer) {
     var a = this;
@@ -7184,11 +7184,11 @@ annotorious.hypo.Popup.prototype.startHideTimer = function() {
     }, 150)
   }
 };
-annotorious.hypo.Popup.prototype.clearHideTimer = function() {
+annotorious.okfn.Popup.prototype.clearHideTimer = function() {
   this._cancelHide = !0;
   this._popupHideTimer && (window.clearTimeout(this._popupHideTimer), delete this._popupHideTimer)
 };
-annotorious.hypo.Popup.prototype.addAnnotator = function(a) {
+annotorious.okfn.Popup.prototype.addAnnotator = function(a) {
   this._annotator = a;
   this._wrapperElement ? goog.dom.appendChild(this._wrapperElement, this.element) : goog.dom.appendChild(this._annotator.element, this.element);
   var b = this;
@@ -7196,25 +7196,25 @@ annotorious.hypo.Popup.prototype.addAnnotator = function(a) {
     b.startHideTimer()
   })
 };
-annotorious.hypo.Popup.prototype.setPosition = function(a) {
+annotorious.okfn.Popup.prototype.setPosition = function(a) {
   var b = this._image.getBoundingClientRect();
   goog.style.setPosition(this.element, new goog.math.Coordinate(b.left + a.x, b.top + a.y))
 };
-annotorious.hypo.Popup.prototype.setAnnotation = function(a) {
+annotorious.okfn.Popup.prototype.setAnnotation = function(a) {
   this._currentAnnotation = a;
   this._text.innerHTML = a.text ? a.text.replace(/\n/g, "<br/>") : '<span class="annotorious-popup-empty">No comment</span>'
 };
 var humanEvents = annotorious.events.ui.EventType;
 window.annotorious || (window.annotorious = {});
 window.annotorious.plugin || (window.annotorious.plugin = {});
-annotorious.hypo.ImagePlugin = function(a, b, c) {
+annotorious.okfn.ImagePlugin = function(a, b, c) {
   this._image = a;
   this._eventBroker = new annotorious.events.EventBroker;
   this._imagePlugin = b;
   this._annotations = {};
   this._wrapperElement = c;
   this._annotationsUnderthePointer = [];
-  this._popup = new annotorious.hypo.Popup(a, this._eventBroker, this._wrapperElement);
+  this._popup = new annotorious.okfn.Popup(a, this._eventBroker, this._wrapperElement);
   this._imageAnnotator = new annotorious.mediatypes.image.ImageAnnotator(a, this._popup);
   this._popup.addAnnotator(this._imageAnnotator);
   a = new annotorious.plugin.FancyBoxSelector.Selector;
@@ -7250,24 +7250,24 @@ annotorious.hypo.ImagePlugin = function(a, b, c) {
     d.clickEvent = a
   });
   goog.events.listen(e, annotorious.events.ui.EventType.MOVE, function(a) {
-    var a = annotorious.events.ui.sanitizeCoordinates(a, e), b = d._imageAnnotator.getAnnotationsAt(a.x, a.y), a = [], c;
-    for(c in b) {
-      a.push(b[c].highlight.annotation)
-    }
-    c = d._annotationsUnderthePointer.filter(function(a) {
+    var a = annotorious.events.ui.sanitizeCoordinates(a, e), b = d._imageAnnotator.getAnnotationsAt(a.x, a.y), c = [];
+    b.forEach(function(a) {
+      c.push(a.highlight.annotation)
+    });
+    a = d._annotationsUnderthePointer.filter(function(a) {
       return-1 == b.indexOf(a)
     });
-    d._imagePlugin.mouseOverAnnotations(a);
-    d._imagePlugin.mouseOutAnnotations(c);
+    d._imagePlugin.mouseOverAnnotations(c);
+    d._imagePlugin.mouseOutAnnotations(a);
     d._annotationsUnderthePointer = b
   });
-  annotorious.hypo.ImagePlugin.prototype.addAnnotation = function(a) {
+  annotorious.okfn.ImagePlugin.prototype.addAnnotation = function(a) {
     this._imageAnnotator.addAnnotation(a)
   };
-  annotorious.hypo.ImagePlugin.prototype.deleteAnnotation = function(a) {
+  annotorious.okfn.ImagePlugin.prototype.deleteAnnotation = function(a) {
     this._imageAnnotator.removeAnnotation(a)
   };
-  annotorious.hypo.ImagePlugin.prototype.disableSelection = function() {
+  annotorious.okfn.ImagePlugin.prototype.disableSelection = function() {
     this._imageAnnotator._selectionEnabled = !1;
     this._imageAnnotator._hint = null
   }
@@ -7287,7 +7287,7 @@ window.Annotorious.ImagePlugin = function() {
   }
   a.prototype.addImage = function(a) {
     var c = this, d = function() {
-      var d = new annotorious.hypo.ImagePlugin(a, c.imagePlugin, c._el);
+      var d = new annotorious.okfn.ImagePlugin(a, c.imagePlugin, c._el);
       c.options.read_only && d.disableSelection();
       c.handlers[a.src] = d;
       c._temporalAnnotations[a.src] && (c._temporalAnnotations[a.src].forEach(function(a) {
@@ -7371,9 +7371,7 @@ window.Annotorious.ImagePlugin = function() {
     d._g2d.clearRect(0, 0, d._canvas.width, d._canvas.height);
     this.addRemoveImageFocus(a, !0);
     var e = !1;
-    console.log("Check annotations", d._annotations);
     d._annotations.forEach(function(a) {
-      console.log("ann", a);
       if(a.highlight.active || c) {
         var b = d._shapes[annotorious.shape.hashCode(a.shapes[0])];
         d._draw(b, a.highlight.active);

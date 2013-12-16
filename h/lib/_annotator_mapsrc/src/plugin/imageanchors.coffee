@@ -40,16 +40,23 @@ class ImageHighlight extends Annotator.Highlight
       text: @annotation.text
       id: @annotation.id
       temporaryID: @annotation.temporaryImageID
-      source: image.src
+      source: image.src.trim()
       highlight: this
 
     if @annotation.temporaryImageID
       @annotoriousAnnotation = @annotorious.updateAnnotationAfterCreatingAnnotatorHighlight @annotoriousAnnotation
+      # Sometimes (like forced login) there is no @annotorious annotation
+      # Let's recreate this annotation
+      if @annotoriousAnnotation._bad?
+        @annotation.temporaryImageID = undefined
+        @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
+        @annotoriousAnnotation.temporaryID = undefined
+        @annotoriousAnnotation._bad = undefined
     else
       @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
 
     @oldID = @annotation.id
-    @_image = @annotorious.getImageForAnnotation @annotoriousAnnotation
+    @_image = image
     # TODO: prepare event handlers that call @annotator's
     # onAnchorMouseover, onAnchorMouseout, onAnchorMousedown, onAnchorClick
     # methods, with the appropriate list of annotations
@@ -58,13 +65,13 @@ class ImageHighlight extends Annotator.Highlight
   annotationUpdated: ->
     @annotoriousAnnotation.text = @annotation.text
     @annotoriousAnnotation.id = @annotation.id
-    if @oldID != @annotation.id then @annotoriousAnnotation.temporaryID = undefined
-    @annotation.temporaryImageID = undefined
+    if @oldID != @annotation.id
+      delete @annotoriousAnnotation.temporaryID
+    delete @annotation.temporaryImageID
 
   # Remove all traces of this hl from the document
   removeFromDocument: ->
     @annotorious.deleteAnnotation @annotoriousAnnotation
-    # TODO: kill this highlight
 
   # Is this a temporary hl?
   isTemporary: -> @_temporary
@@ -74,10 +81,10 @@ class ImageHighlight extends Annotator.Highlight
     @_temporary = value
 
   # Mark/unmark this hl as active
-  setActive: (value) ->
-    # TODO: Consider alwaysonannotation
+  setActive: (value, batch = false) ->
     @active = value
-    @annotorious.drawAnnotationHighlight @annotoriousAnnotation, @visibleHighlight
+    unless batch
+      @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
 
   _getDOMElements: -> @_image
 
@@ -95,13 +102,15 @@ class ImageHighlight extends Annotator.Highlight
   paddedScrollTo: (direction) -> @scrollTo()
     # TODO; scroll to this, with some padding
 
-  setVisibleHighlight: (state) ->
+  setVisibleHighlight: (state, batch = false) ->
     @visibleHighlight = state
     if state
       @annotorious.updateShapeStyle @annotoriousAnnotation, @highlightStyle
     else
       @annotorious.updateShapeStyle @annotoriousAnnotation, @defaultStyle
-    @annotorious.drawAnnotationHighlight @annotoriousAnnotation, @visibleHighlight
+
+    unless batch
+      @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
 
 class ImageAnchor extends Annotator.Anchor
 
@@ -128,16 +137,20 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     # Initialize whatever we have to
     @highlightType = 'ImageHighlight'
 
+    @Annotator = Annotator
+    @$ = Annotator.$
+
     # Collect the images within the wrapper
     @images = {}
+    @visibleHighlights = false
     wrapper = @annotator.wrapper[0]
-    @imagelist = $(wrapper).find('img')
-    for image in @imagelist
+    imagelist = $(wrapper).find('img:visible')
+    for image in imagelist
       @images[image.src] = image
 
     # TODO init stuff, boot up other libraries,
     # Create the required UI, etc.
-    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this, @imagelist
+    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this, imagelist
 
     # Register the image anchoring strategy
     @annotator.anchoringStrategies.push
@@ -145,50 +158,107 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       name: "image"
       code: this.createImageAnchor
 
-
-    # Upon creating an annotation,
-    @annotator.on 'beforeAnnotationCreated', (annotation) =>
-     # Check whether we have triggered it
-     if @pendingID
-       # Yes, this is a newly created image annotation
-       # Pass back the ID, so that Annotorious can recognize it
-       annotation.temporaryImageID = @pendingID
-       delete @pendingID
-
     # Reacting to always-on-highlights mode
     @annotator.subscribe "setVisibleHighlights", (state) =>
-      imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
-      for hl in imageHighlights
-        hl.setVisibleHighlight state
+      @visibleHighlights = state
+      @setHighlightsVisible state
+
+    # Reacting to finalizeHighlights
+    @annotator.subscribe "finalizeHighlights", =>
+      for src, _ of @images
+        try
+          @annotorious.drawAnnotationHighlights src, @visibleHighlights
+        catch error
+          console.log "Error: failed to draw image highlights for", src
+          console.log error.stack
+
+    @annotator.subscribe "annotationsLoaded", =>
+      if @visibleHighlights then @setHighlightsVisible true
+
+    # React to image tags changes
+    @observer = new MutationSummary
+      callback: @_onMutation
+      rootNode: wrapper
+      queries: [
+        element: 'img'
+      ]
+
+  _onMutation: (summaries) =>
+    for summary in summaries
+
+      # New images were loaded
+      summary.added.forEach (newImage) =>
+        @images[newImage.src] = newImage
+        @annotorious.addImage newImage
+
+        # Our reanchor function for this image
+        isImageAnchor = (anchor) ->
+          for t in anchor.annotation.target
+            img_selector = @annotator.findSelector t, 'ShapeSelector'
+            if img_selector?.source is newImage.src
+              return true
+          return false
+
+        @annotator._reanchorAnnotations isImageAnchor
+
+      # Removed images
+      summary.removed.forEach (oldImage) =>
+        # Remove highlights for this image
+        highlights = @annotorious.getHighlightsForImage oldImage
+        for hl in highlights
+          hl.anchor.remove()
+          @annotator.orphans.push hl.annotation
+
+        # Remove it from annotorious too
+        delete @images[oldImage.src]
+        @annotorious.removeImage oldImage
+
+  setHighlightsVisible: (state) =>
+    imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
+    for hl in imageHighlights
+      hl.setVisibleHighlight state, true
+
+    for src, _ of @images
+      @annotorious.drawAnnotationHighlights src, @visibleHighlights
 
   # This method is used by Annotator to attempt to create image anchors
   createImageAnchor: (annotation, target) =>
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
     # Fetch the image selector
     selector = @annotator.findSelector target.selector, "ShapeSelector"
 
     # No image selector, no image anchor
-    return unless selector?
+    unless selector?
+      dfd.reject "no ImageSelector found"
+      return dfd.promise()
 
     # Find the image / verify that it exists
     # TODO: Maybe store image hash and compare them.
     image = @images[selector.source]
 
-    # If we can't find the image, return null.
-    return null unless image
+    # If we can't find the image, we fail
+    unless image
+      dfd.reject ("No such image exists as " + selector.source)
+      return dfd.promise()
 
     # Return an image anchor
-    new ImageAnchor @annotator, annotation, target, # Mandatory data
+    dfd.resolve new ImageAnchor @annotator, annotation, target, # Mandatory data
       0, 0, '', # Page numbers. If we want multi-page (=pdf) support, find that out
       image, selector.shapeType, selector.geometry, @annotorious
 
+    dfd.promise()
+
   # This method is triggered by Annotorious to create image annotation
-  annotate: (source, shape, geometry, tempID) ->
+  annotate: (source, shape, geometry, tempID, annotoriousAnnotation) ->
     # Prepare a target describing selection
 
-    # Prepare data for Annotator about the selected target
+    # Prepare data for Annotator about the selection
     event =
+      # This is the target
       targets: [
-        source: annotator.getHref()
+        source: @annotator.getHref()
         selector: [
           type: "ShapeSelector"
           source: source
@@ -196,15 +266,25 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
           geometry: geometry
         ]
       ]
-
-    # Store the received temporary ID
-    @pendingID = tempID
+      # This extra info will be merged into the annotation
+      annotationData:
+        temporaryImageID: tempID
 
     # Trigger the creation of a new annotation
-    @annotator.onSuccessfulSelection event, true
+    result = @annotator.onSuccessfulSelection event, true
+    unless result
+      @annotorious.deleteAnnotation annotoriousAnnotation
 
   # This method is triggered by Annotorious to show a list of annotations
   showAnnotations: (annotations) =>
     return unless annotations.length
     @annotator.onAnchorMousedown annotations, @highlightType
     @annotator.onAnchorClick annotations, @highlightType
+
+  # This method is triggered by Annotorious to emphasize annotations
+  mouseOverAnnotations: (annotations) =>
+    @annotator.onAnchorMouseover annotations, @highlightType
+
+  # This method is triggered by Annotorious to de-emphasize annotations
+  mouseOutAnnotations: (annotations) =>
+    @annotator.onAnchorMouseout annotations, @highlightType

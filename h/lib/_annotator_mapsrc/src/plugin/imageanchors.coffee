@@ -156,7 +156,8 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @annotator.anchoringStrategies.push
       # Image anchoring strategy
       name: "image"
-      code: this.createImageAnchor
+      create: @createImageAnchor
+      verify: @verifyImageAnchor
 
     # Reacting to always-on-highlights mode
     @annotator.subscribe "setVisibleHighlights", (state) =>
@@ -181,6 +182,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       rootNode: wrapper
       queries: [
         element: 'img'
+        elementAttributes: 'src'
       ]
 
   _onMutation: (summaries) =>
@@ -192,14 +194,13 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         @annotorious.addImage newImage
 
         # Our reanchor function for this image
-        isImageAnchor = (anchor) ->
-          for t in anchor.annotation.target
-            img_selector = @annotator.findSelector t, 'ShapeSelector'
-            if img_selector?.source is newImage.src
-              return true
-          return false
+        hasSelectorWithThisImageSource = (t) ->
+          console.log 'hasSelectorWithThisImageSource', t, newImage.src
+          img_selector = @annotator.findSelector t, 'ShapeSelector'
+          img_selector?.source is newImage.src
 
-        @annotator._reanchorAnnotations isImageAnchor
+        # Anchor annotation: _anchorAllAnnotations
+        @annotator._anchorAllAnnotations hasSelectorWithThisImageSource
 
       # Removed images
       summary.removed.forEach (oldImage) =>
@@ -207,11 +208,21 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         highlights = @annotorious.getHighlightsForImage oldImage
         for hl in highlights
           hl.anchor.remove()
-          @annotator.orphans.push hl.annotation
 
         # Remove it from annotorious too
         delete @images[oldImage.src]
         @annotorious.removeImage oldImage
+
+      summary.reparented.forEach (movedImage) =>
+        console.log 'Image has been reparented!', movedImage
+        console.log summary.getOldParentNode movedImage
+        # Do not react to annotorious own changes, check actual parent
+
+      console.log 'attributeChanged', summary.attributeChanged
+      #summary.attributeChanged.forEach (image) =>
+      #  console.log 'Attribute changed!'
+
+      #Attributes change
 
   setHighlightsVisible: (state) =>
     imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
@@ -248,6 +259,12 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       0, 0, '', # Page numbers. If we want multi-page (=pdf) support, find that out
       image, selector.shapeType, selector.geometry, @annotorious
 
+    dfd.promise()
+
+  # Verify an image anchor, we manually remove the not needed image anchor
+  verifyImageAnchor: (anchor, reason, data) =>
+    dfd = @$.Deferred()
+    dfd.resolve true
     dfd.promise()
 
   # This method is triggered by Annotorious to create image annotation

@@ -7370,13 +7370,16 @@ window.Annotorious.ImagePlugin = function() {
     var d = this.handlers[a]._imageAnnotator._viewer;
     d._g2d.clearRect(0, 0, d._canvas.width, d._canvas.height);
     this.addRemoveImageFocus(a, !0);
-    var e = !1, f;
-    for(f in d._annotations) {
-      var g = d._annotations[f];
-      if(g.highlight.active || c) {
-        e = d._shapes[annotorious.shape.hashCode(g.shapes[0])], d._draw(e, g.highlight.active), e = !0
+    var e = !1;
+    console.log("Check annotations", d._annotations);
+    d._annotations.forEach(function(a) {
+      console.log("ann", a);
+      if(a.highlight.active || c) {
+        var b = d._shapes[annotorious.shape.hashCode(a.shapes[0])];
+        d._draw(b, a.highlight.active);
+        e = !0
       }
-    }
+    });
     e || this.addRemoveImageFocus(a, !1)
   };
   a.prototype.getImageForAnnotation = function(a) {

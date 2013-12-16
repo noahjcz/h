@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2013-12-16 13:46:54Z
+** Built at: 2013-12-16 16:28:11Z
 */
 
 
@@ -182,6 +182,7 @@
       this.mouseOutAnnotations = __bind(this.mouseOutAnnotations, this);
       this.mouseOverAnnotations = __bind(this.mouseOverAnnotations, this);
       this.showAnnotations = __bind(this.showAnnotations, this);
+      this.verifyImageAnchor = __bind(this.verifyImageAnchor, this);
       this.createImageAnchor = __bind(this.createImageAnchor, this);
       this.setHighlightsVisible = __bind(this.setHighlightsVisible, this);
       this._onMutation = __bind(this._onMutation, this);
@@ -206,7 +207,8 @@
       this.annotorious = new Annotorious.ImagePlugin(wrapper, {}, this, imagelist);
       this.annotator.anchoringStrategies.push({
         name: "image",
-        code: this.createImageAnchor
+        create: this.createImageAnchor,
+        verify: this.verifyImageAnchor
       });
       this.annotator.subscribe("setVisibleHighlights", function(state) {
         _this.visibleHighlights = state;
@@ -238,7 +240,8 @@
         rootNode: wrapper,
         queries: [
           {
-            element: 'img'
+            element: 'img',
+            elementAttributes: 'src'
           }
         ]
       });
@@ -251,34 +254,32 @@
       for (_i = 0, _len = summaries.length; _i < _len; _i++) {
         summary = summaries[_i];
         summary.added.forEach(function(newImage) {
-          var isImageAnchor;
+          var hasSelectorWithThisImageSource;
           _this.images[newImage.src] = newImage;
           _this.annotorious.addImage(newImage);
-          isImageAnchor = function(anchor) {
-            var img_selector, t, _j, _len1, _ref1;
-            _ref1 = anchor.annotation.target;
-            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-              t = _ref1[_j];
-              img_selector = this.annotator.findSelector(t, 'ShapeSelector');
-              if ((img_selector != null ? img_selector.source : void 0) === newImage.src) {
-                return true;
-              }
-            }
-            return false;
+          hasSelectorWithThisImageSource = function(t) {
+            var img_selector;
+            console.log('hasSelectorWithThisImageSource', t, newImage.src);
+            img_selector = this.annotator.findSelector(t, 'ShapeSelector');
+            return (img_selector != null ? img_selector.source : void 0) === newImage.src;
           };
-          return _this.annotator._reanchorAnnotations(isImageAnchor);
+          return _this.annotator._anchorAllAnnotations(hasSelectorWithThisImageSource);
         });
-        _results.push(summary.removed.forEach(function(oldImage) {
+        summary.removed.forEach(function(oldImage) {
           var highlights, hl, _j, _len1;
           highlights = _this.annotorious.getHighlightsForImage(oldImage);
           for (_j = 0, _len1 = highlights.length; _j < _len1; _j++) {
             hl = highlights[_j];
             hl.anchor.remove();
-            _this.annotator.orphans.push(hl.annotation);
           }
           delete _this.images[oldImage.src];
           return _this.annotorious.removeImage(oldImage);
-        }));
+        });
+        summary.reparented.forEach(function(movedImage) {
+          console.log('Image has been reparented!', movedImage);
+          return console.log(summary.getOldParentNode(movedImage));
+        });
+        _results.push(console.log('attributeChanged', summary.attributeChanged));
       }
       return _results;
     };
@@ -315,6 +316,13 @@
         return dfd.promise();
       }
       dfd.resolve(new ImageAnchor(this.annotator, annotation, target, 0, 0, '', image, selector.shapeType, selector.geometry, this.annotorious));
+      return dfd.promise();
+    };
+
+    ImageAnchors.prototype.verifyImageAnchor = function(anchor, reason, data) {
+      var dfd;
+      dfd = this.$.Deferred();
+      dfd.resolve(true);
       return dfd.promise();
     };
 

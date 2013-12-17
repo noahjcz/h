@@ -218,11 +218,32 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         console.log summary.getOldParentNode movedImage
         # Do not react to annotorious own changes, check actual parent
 
-      console.log 'attributeChanged', summary.attributeChanged
-      #summary.attributeChanged.forEach (image) =>
-      #  console.log 'Attribute changed!'
+      if summary.attributeChanged.src?.length
+        for image in summary.attributeChanged.src
+          oldsrc = summary.getOldAttribute image, 'src'
 
-      #Attributes change
+          # Remove annotations from old image
+          oldImage = @images[oldsrc]
+          highlights = @annotorious.getHighlightsForImage oldImage
+          for hl in highlights
+            hl.anchor.remove()
+
+          # Remove it from annotorious too
+          delete @images[oldsrc]
+          @annotorious.removeImage oldImage
+
+          # Add annotations for the new image
+          @images[image.src] = image
+          @annotorious.addImage image
+
+          # Our reanchor function for this image
+          hasSelectorWithThisImageSource = (t) ->
+            console.log 'hasSelectorWithThisImageSource', t, image.src
+            img_selector = @annotator.findSelector t, 'ShapeSelector'
+            img_selector?.source is image.src
+
+          # Anchor annotation: _anchorAllAnnotations
+          @annotator._anchorAllAnnotations hasSelectorWithThisImageSource
 
   setHighlightsVisible: (state) =>
     imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )

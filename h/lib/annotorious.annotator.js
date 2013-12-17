@@ -7204,6 +7204,66 @@ annotorious.okfn.Popup.prototype.setAnnotation = function(a) {
   this._currentAnnotation = a;
   this._text.innerHTML = a.text ? a.text.replace(/\n/g, "<br/>") : '<span class="annotorious-popup-empty">No comment</span>'
 };
+annotorious.okfn.Hint = function(a, b, c) {
+  var d = this;
+  c || (c = "Click and Drag to Annotate");
+  this.element = goog.soy.renderAsElement(annotorious.templates.image.hint, {msg:c});
+  this._annotator = a;
+  this._image = a._image;
+  this._message = goog.dom.query(".annotorious-hint-msg", this.element)[0];
+  this._icon = goog.dom.query(".annotorious-hint-icon", this.element)[0];
+  this._overItemHandler = function() {
+    d.show()
+  };
+  this._outOfItemHandler = function() {
+    d.hide()
+  };
+  a = this._image.getBoundingClientRect();
+  goog.style.setStyle(this.element, "position", "absolute");
+  goog.style.setStyle(this.element, "left", a.left + "px");
+  goog.style.setStyle(this.element, "top", a.top + "px");
+  this._attachListeners();
+  this.hide();
+  goog.dom.appendChild(b, this.element)
+};
+annotorious.okfn.Hint.prototype._attachListeners = function() {
+  var a = this;
+  this._mouseOverListener = goog.events.listen(this._icon, goog.events.EventType.MOUSEOVER, function() {
+    a.show();
+    window.clearTimeout(a._hideTimer)
+  });
+  this._mouseOutListener = goog.events.listen(this._icon, goog.events.EventType.MOUSEOUT, function() {
+    a.hide()
+  });
+  this._annotator.addHandler(annotorious.events.EventType.MOUSE_OVER_ANNOTATABLE_ITEM, this._overItemHandler);
+  this._annotator.addHandler(annotorious.events.EventType.MOUSE_OUT_OF_ANNOTATABLE_ITEM, this._outOfItemHandler)
+};
+annotorious.okfn.Hint.prototype._detachListeners = function() {
+  goog.events.unlistenByKey(this._mouseOverListener);
+  goog.events.unlistenByKey(this._mouseOutListener);
+  this._annotator.removeHandler(annotorious.events.EventType.MOUSE_OVER_ANNOTATABLE_ITEM, this._overItemHandler);
+  this._annotator.removeHandler(annotorious.events.EventType.MOUSE_OUT_OF_ANNOTATABLE_ITEM, this._outOfItemHandler)
+};
+annotorious.Hint.prototype.show = function() {
+  window.clearTimeout(this._hideTimer);
+  goog.style.setOpacity(this._message, 0.8);
+  var a = this;
+  this._hideTimer = window.setTimeout(function() {
+    a.hide()
+  }, 3E3)
+};
+annotorious.okfn.Hint.prototype.hide = function() {
+  window.clearTimeout(this._hideTimer);
+  goog.style.setOpacity(this._message, 0)
+};
+annotorious.okfn.Hint.prototype.destroy = function() {
+  this._detachListeners();
+  delete this._mouseOverListener;
+  delete this._mouseOutListener;
+  delete this._overItemHandler;
+  delete this._outOfItemHandler;
+  goog.dom.removeNode(this.element)
+};
 var humanEvents = annotorious.events.ui.EventType;
 window.annotorious || (window.annotorious = {});
 window.annotorious.plugin || (window.annotorious.plugin = {});
@@ -7217,6 +7277,8 @@ annotorious.okfn.ImagePlugin = function(a, b, c) {
   this._popup = new annotorious.okfn.Popup(a, this._eventBroker, this._wrapperElement);
   this._imageAnnotator = new annotorious.mediatypes.image.ImageAnnotator(a, this._popup);
   this._popup.addAnnotator(this._imageAnnotator);
+  this._hint = new annotorious.okfn.Hint(this._imageAnnotator, c);
+  this._imageAnnotator._hint = this._hint;
   a = new annotorious.plugin.FancyBoxSelector.Selector;
   a.init(this._imageAnnotator, this._imageAnnotator._editCanvas);
   this._imageAnnotator._selectors.push(a);
@@ -7397,6 +7459,9 @@ window.Annotorious.ImagePlugin = function() {
 annotorious.templates.annotator = {};
 annotorious.templates.annotator.popup = function() {
   return'<div class="annotorious-popup top-left" style="position:absolute;z-index:1"><span class="annotorious-popup-text"></span></div>'
+};
+annotorious.templates.annotator.hint = function(a) {
+  return'<div class="annotorious-hint" style="white-space:nowrap; position:absolute; top:0px; left:0px; pointer-events:none;"><div class="annotorious-hint-msg annotorious-opacity-fade">' + soy.$$escapeHtml(a.msg) + '</div><div class="annotorious-hint-icon" style="pointer-events:auto"></div></div>'
 };
 annotorious.Annotation = function(a, b, c) {
   this.src = a;

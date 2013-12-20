@@ -44,7 +44,7 @@ class ImageHighlight extends Annotator.Highlight
       highlight: this
 
     if @annotation.temporaryImageID
-      @annotoriousAnnotation = @annotorious.updateAnnotationAfterCreatingAnnotatorHighlight @annotoriousAnnotation
+      @annotoriousAnnotation = @annotorious.updateAnnotationAfterCreatingAnnotatorHighlight @annotoriousAnnotation, image
       # Sometimes (like forced login) there is no @annotorious annotation
       # Let's recreate this annotation
       if @annotoriousAnnotation._bad?
@@ -83,8 +83,8 @@ class ImageHighlight extends Annotator.Highlight
   # Mark/unmark this hl as active
   setActive: (value, batch = false) ->
     @active = value
-    unless batch
-      @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
+    unless batchl
+      @annotorious.drawAnnotationHighlights @_image, @visibleHighlight
 
   _getDOMElements: -> @_image
 
@@ -105,12 +105,12 @@ class ImageHighlight extends Annotator.Highlight
   setVisibleHighlight: (state, batch = false) ->
     @visibleHighlight = state
     if state
-      @annotorious.updateShapeStyle @annotoriousAnnotation, @highlightStyle
+      @annotorious.updateShapeStyle @_image, @annotoriousAnnotation, @highlightStyle
     else
-      @annotorious.updateShapeStyle @annotoriousAnnotation, @defaultStyle
+      @annotorious.updateShapeStyle @_image, @annotoriousAnnotation, @defaultStyle
 
     unless batch
-      @annotorious.drawAnnotationHighlights @annotoriousAnnotation.source, @visibleHighlight
+      @annotorious.drawAnnotationHighlights @_image, @visibleHighlight
 
 class ImageAnchor extends Annotator.Anchor
 
@@ -141,16 +141,15 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @$ = Annotator.$
 
     # Collect the images within the wrapper
-    @images = {}
+    @_imageMap = {}
     @visibleHighlights = false
     wrapper = @annotator.wrapper[0]
-    imagelist = $(wrapper).find('img:visible')
-    for image in imagelist
-      @images[image.src] = image
 
-    # TODO init stuff, boot up other libraries,
-    # Create the required UI, etc.
-    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this, imagelist
+    # Initalizing the Annotorious plugin
+    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this
+
+    imagelist = $(wrapper).find('img:visible')
+    @_addImage image for image in imagelist
 
     # Register the image anchoring strategy
     @annotator.anchoringStrategies.push
@@ -166,12 +165,13 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
 
     # Reacting to finalizeHighlights
     @annotator.subscribe "finalizeHighlights", =>
-      for src, _ of @images
-        try
-          @annotorious.drawAnnotationHighlights src, @visibleHighlights
-        catch error
-          console.log "Error: failed to draw image highlights for", src
-          console.log error.stack
+      for src, imageList of @_imageMap
+        for image in imageList
+          try
+            @annotorious.drawAnnotationHighlights image, @visibleHighlights
+          catch error
+            console.log "Error: failed to draw image highlights for", src
+            console.log error.stack
 
     @annotator.subscribe "annotationsLoaded", =>
       if @visibleHighlights then @setHighlightsVisible true
@@ -185,22 +185,42 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         elementAttributes: 'src'
       ]
 
+  # Register a new image for this plugin
+  _addImage: (image) =>
+    # The imageMap stores the images hashed by image.source
+    # So create an empty list for all possible sources
+    unless @_imageMap[image.src]? then @_imageMap[image.src] = []
+    @_imageMap[image.src].push image
+
+    # Index is the DOM order of that image
+    index = @_imageMap[image.src].length - 1
+    @annotorious.addImage image, index
+
+  _anchorAnnotationsForNewlyLoadedImages: (sources) =>
+    # Our reanchor function for this image
+    hasSelectorWithThisImageSource = (t) ->
+      console.log 'hasSelectorWithThisImageSource', t, sources
+      img_selector = @annotator.findSelector t, 'ShapeSelector'
+      img_selector?.source in sources
+
+    @annotator._anchorAllAnnotations hasSelectorWithThisImageSource
+
+  _removeImage: (image) =>
+    t = @_imageMap[image.src].indexOf image
+    @_imageMap[image.src][t..t] = [] if t > -1
+
+    # Remove it from annotorious too
+    @annotorious.removeImage image
+
   _onMutation: (summaries) =>
     for summary in summaries
 
+      sources = {}
       # New images were loaded
       summary.added.forEach (newImage) =>
-        @images[newImage.src] = newImage
-        @annotorious.addImage newImage
-
-        # Our reanchor function for this image
-        hasSelectorWithThisImageSource = (t) ->
-          console.log 'hasSelectorWithThisImageSource', t, newImage.src
-          img_selector = @annotator.findSelector t, 'ShapeSelector'
-          img_selector?.source is newImage.src
-
-        # Anchor annotation: _anchorAllAnnotations
-        @annotator._anchorAllAnnotations hasSelectorWithThisImageSource
+        @_addImage newImage
+        sources[newImage.src] = true
+      @_anchorAnnotationsForNewlyLoadedImages sources
 
       # Removed images
       summary.removed.forEach (oldImage) =>
@@ -208,10 +228,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         highlights = @annotorious.getHighlightsForImage oldImage
         for hl in highlights
           hl.anchor.remove()
-
-        # Remove it from annotorious too
-        delete @images[oldImage.src]
-        @annotorious.removeImage oldImage
+        @_removeImage oldImage
 
       summary.reparented.forEach (movedImage) =>
         console.log 'Image has been reparented!', movedImage
@@ -220,38 +237,61 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
 
       if summary.attributeChanged.src?.length
         for image in summary.attributeChanged.src
+          # Remove "old" image, recreate everything for the new source
           oldsrc = summary.getOldAttribute image, 'src'
+          oldImage = (@_imageMap[oldsrc].filter (img) -> img.src isnt oldsrc)[0]
 
-          # Remove annotations from old image
-          oldImage = @images[oldsrc]
-          highlights = @annotorious.getHighlightsForImage oldImage
-          for hl in highlights
-            hl.anchor.remove()
-
-          # Remove it from annotorious too
-          delete @images[oldsrc]
-          @annotorious.removeImage oldImage
+          if oldImage?
+            highlights = @annotorious.getHighlightsForImage oldImage
+            for hl in highlights
+              hl.anchor.remove()
+            @_removeImage oldImage
 
           # Add annotations for the new image
-          @images[image.src] = image
-          @annotorious.addImage image
-
-          # Our reanchor function for this image
-          hasSelectorWithThisImageSource = (t) ->
-            console.log 'hasSelectorWithThisImageSource', t, image.src
-            img_selector = @annotator.findSelector t, 'ShapeSelector'
-            img_selector?.source is image.src
-
-          # Anchor annotation: _anchorAllAnnotations
-          @annotator._anchorAllAnnotations hasSelectorWithThisImageSource
+          @_addImage image
+          @_anchorAnnotationsForNewlyLoadedImages [image.src]
 
   setHighlightsVisible: (state) =>
     imageHighlights = @annotator.getHighlights().filter( (hl) -> hl instanceof ImageHighlight )
     for hl in imageHighlights
       hl.setVisibleHighlight state, true
 
-    for src, _ of @images
-      @annotorious.drawAnnotationHighlights src, @visibleHighlights
+    for src, imageList of @_imageMap
+      for image in imageList
+        @annotorious.drawAnnotationHighlights image, @visibleHighlights
+
+  _findAndVerifyImageForSelector: (selector) =>
+    # Find the image / verify that it exists
+    # TODO: Maybe store image hash and compare them.
+    image = undefined
+    imageList = @_imageMap[selector.source]
+    if imageList?
+      # Backwards compatibility
+      unless selector.index then selector.index = 0
+
+      # This is the picture in the selector's index
+      candidate = imageList[selector.index]
+      if candidate?
+        if selector.id?
+          # We have a saved image ID
+          # Happy happy joy joy we have found the same image!
+          if candidate.id? is selector.id then image = candidate
+          else
+            console.warn 'Selector.id and candidate.id are different', selector.id, candidate.id
+            # The IDs are different
+            idCandidate = undefined
+            for image in imageList
+              # This case we have a different image with the same source and id, a better match
+              if image.id? is selector.id then idCandidate = image
+
+            # Wishful thinking
+            image = if idCandidate? then idCandidate else candidate
+        else
+          # Else we have no other method
+          image = candidate
+    else
+      console.warn 'No image found with source', selector.source
+    image
 
   # This method is used by Annotator to attempt to create image anchors
   createImageAnchor: (annotation, target) =>
@@ -266,9 +306,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       dfd.reject "no ImageSelector found"
       return dfd.promise()
 
-    # Find the image / verify that it exists
-    # TODO: Maybe store image hash and compare them.
-    image = @images[selector.source]
+    image = @_findAndVerifyImageForSelector selector
 
     # If we can't find the image, we fail
     unless image
@@ -289,7 +327,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     dfd.promise()
 
   # This method is triggered by Annotorious to create image annotation
-  annotate: (source, shape, geometry, tempID, annotoriousAnnotation) ->
+  annotate: (image, index, shape, geometry, tempID, annotoriousAnnotation) ->
     # Prepare a target describing selection
 
     # Prepare data for Annotator about the selection
@@ -299,7 +337,8 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         source: @annotator.getHref()
         selector: [
           type: "ShapeSelector"
-          source: source
+          source: image.src
+          index: index
           shapeType: shape
           geometry: geometry
         ]
@@ -307,6 +346,8 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       # This extra info will be merged into the annotation
       annotationData:
         temporaryImageID: tempID
+
+    if image.id? then event.targets[0].selector[0].id = image.id
 
     # Trigger the creation of a new annotation
     result = @annotator.onSuccessfulSelection event, true

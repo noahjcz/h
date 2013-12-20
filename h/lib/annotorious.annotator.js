@@ -7267,65 +7267,66 @@ annotorious.okfn.Hint.prototype.destroy = function() {
 var humanEvents = annotorious.events.ui.EventType;
 window.annotorious || (window.annotorious = {});
 window.annotorious.plugin || (window.annotorious.plugin = {});
-annotorious.okfn.ImagePlugin = function(a, b, c) {
+annotorious.okfn.ImagePlugin = function(a, b, c, d) {
   this._image = a;
+  this._index = b;
   this._eventBroker = new annotorious.events.EventBroker;
-  this._imagePlugin = b;
+  this._imagePlugin = c;
   this._annotations = {};
-  this._wrapperElement = c;
+  this._wrapperElement = d;
   this._annotationsUnderthePointer = [];
   this._popup = new annotorious.okfn.Popup(a, this._eventBroker, this._wrapperElement);
   this._imageAnnotator = new annotorious.mediatypes.image.ImageAnnotator(a, this._popup);
   this._popup.addAnnotator(this._imageAnnotator);
   this._imageAnnotator._hint.destroy();
-  this._hint = new annotorious.okfn.Hint(this._imageAnnotator, c);
+  this._hint = new annotorious.okfn.Hint(this._imageAnnotator, d);
   this._imageAnnotator._hint = this._hint;
   a = new annotorious.plugin.FancyBoxSelector.Selector;
   a.init(this._imageAnnotator, this._imageAnnotator._editCanvas);
   this._imageAnnotator._selectors.push(a);
   this._imageAnnotator._currentSelector = a;
-  var d = this, a = this._imageAnnotator._eventBroker._handlers[annotorious.events.EventType.SELECTION_CANCELED][0];
+  var e = this, a = this._imageAnnotator._eventBroker._handlers[annotorious.events.EventType.SELECTION_CANCELED][0];
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_COMPLETED, this._imageAnnotator._eventBroker._handlers[annotorious.events.EventType.SELECTION_COMPLETED][0]);
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_CANCELED, a);
   this._newSelectionHandler = function(a) {
-    d.maybeClicked = !1;
-    var b = d._imageAnnotator._image.src + "#" + (new Date).toString(), c = {source:d._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b};
-    d._imageAnnotator.addAnnotation(c);
-    d._imageAnnotator.stopSelection();
-    d._imagePlugin.annotate(d._imageAnnotator._image.src, a.shape.type, a.shape.geometry, b, c)
+    e.maybeClicked = !1;
+    var b = e._imageAnnotator._image.src + "#" + (new Date).toString(), c = {source:e._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b};
+    e._imageAnnotator.addAnnotation(c);
+    e._imageAnnotator.stopSelection();
+    e._imagePlugin.annotate(e._imageAnnotator._image, e._index, a.shape.type, a.shape.geometry, b, c)
   };
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_COMPLETED, this._newSelectionHandler);
   this._newCancelHandler = function() {
-    if(d.maybeClicked) {
-      var a = annotorious.events.ui.sanitizeCoordinates(d.clickEvent, e), a = d._imageAnnotator.getAnnotationsAt(a.x, a.y), b = [], c;
+    if(e.maybeClicked) {
+      var a = annotorious.events.ui.sanitizeCoordinates(e.clickEvent, f), a = e._imageAnnotator.getAnnotationsAt(a.x, a.y), b = [], c;
       for(c in a) {
         b.push(a[c].highlight.annotation)
       }
-      d._imagePlugin.showAnnotations(b)
+      e._imagePlugin.showAnnotations(b)
     }
-    annotorious.events.ui.hasMouse && goog.style.showElement(d._imageAnnotator._editCanvas, !1);
-    d._imageAnnotator._currentSelector.stopSelection()
+    annotorious.events.ui.hasMouse && goog.style.showElement(e._imageAnnotator._editCanvas, !1);
+    e._imageAnnotator._currentSelector.stopSelection()
   };
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_CANCELED, this._newCancelHandler);
   this._newSelectionStartedHandler = function() {
-    d.maybeClicked = !0
+    e.maybeClicked = !0
   };
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_STARTED, this._newSelectionStartedHandler);
-  var e = annotorious.events.ui.hasTouch ? this._imageAnnotator._editCanvas : this._imageAnnotator._viewCanvas;
-  this._eventDownListener = goog.events.listen(e, annotorious.events.ui.EventType.DOWN, function(a) {
-    d.clickEvent = a
+  var f = annotorious.events.ui.hasTouch ? this._imageAnnotator._editCanvas : this._imageAnnotator._viewCanvas;
+  this._eventDownListener = goog.events.listen(f, annotorious.events.ui.EventType.DOWN, function(a) {
+    e.clickEvent = a
   });
-  this._eventMoveListener = goog.events.listen(e, annotorious.events.ui.EventType.MOVE, function(a) {
-    var a = annotorious.events.ui.sanitizeCoordinates(a, e), b = d._imageAnnotator.getAnnotationsAt(a.x, a.y), c = [];
+  this._eventMoveListener = goog.events.listen(f, annotorious.events.ui.EventType.MOVE, function(a) {
+    var a = annotorious.events.ui.sanitizeCoordinates(a, f), b = e._imageAnnotator.getAnnotationsAt(a.x, a.y), c = [];
     b.forEach(function(a) {
       c.push(a.highlight.annotation)
     });
-    a = d._annotationsUnderthePointer.filter(function(a) {
+    a = e._annotationsUnderthePointer.filter(function(a) {
       return-1 == b.indexOf(a)
     });
-    d._imagePlugin.mouseOverAnnotations(c);
-    d._imagePlugin.mouseOutAnnotations(a);
-    d._annotationsUnderthePointer = b
+    e._imagePlugin.mouseOverAnnotations(c);
+    e._imagePlugin.mouseOutAnnotations(a);
+    e._annotationsUnderthePointer = b
   });
   annotorious.okfn.ImagePlugin.prototype.addAnnotation = function(a) {
     this._imageAnnotator.addAnnotation(a)
@@ -7349,40 +7350,34 @@ annotorious.okfn.ImagePlugin = function(a, b, c) {
 };
 window.Annotorious = {};
 window.Annotorious.ImagePlugin = function() {
-  function a(a, c, d, e) {
+  function a(a, c, d) {
     this._el = a;
     this.options = c;
     this.imagePlugin = d;
     this.handlers = {};
-    this._temporalAnnotations = {};
-    var f = this;
-    goog.array.forEach(e, function(a) {
-      f.addImage(a)
-    })
+    this._temporalAnnotations = {}
   }
-  a.prototype.addImage = function(a) {
-    var c = this, d = function() {
-      var d = new annotorious.okfn.ImagePlugin(a, c.imagePlugin, c._el);
-      c.options.read_only && d.disableSelection();
-      c.handlers[a.src] = d;
-      c._temporalAnnotations[a.src] && (c._temporalAnnotations[a.src].forEach(function(a) {
-        c._addAnnotationFromHighlight(a.annotation, a.image, a.shape, a.geometry, a.style)
-      }), c._temporalAnnotations[a.src] = [])
+  a.prototype.addImage = function(a, c) {
+    var d = this, e = function() {
+      var e = new annotorious.okfn.ImagePlugin(a, c, d.imagePlugin, d._el);
+      d.options.read_only && e.disableSelection();
+      d.handlers[a] = e;
+      d._temporalAnnotations[a] && (d._temporalAnnotations[a].forEach(function(a) {
+        d._addAnnotationFromHighlight(a.annotation, a.image, a.shape, a.geometry, a.style)
+      }), d._temporalAnnotations[a] = [])
     };
-    a.complete ? d() : a.addEventListener("load", d)
+    a.complete ? e() : a.addEventListener("load", e)
   };
   a.prototype.getHighlightsForImage = function(a) {
     var c = [];
-    if(a = this.handlers[a.src]) {
-      for(var d in a._imageAnnotator._viewer._annotations) {
-        c.push(a._imageAnnotator._viewer._annotations[d].highlight)
-      }
-    }
+    (a = this.handlers[a]) && a._imageAnnotator._viewer._annotations.forEach(function(a) {
+      c.push(a.highlight)
+    });
     return c
   };
   a.prototype.removeImage = function(a) {
-    var c = this.handlers[a.src];
-    c && (c.destroy(), delete this.handlers[a.src])
+    var c = this.handlers[a];
+    c && (c.destroy(), delete this.handlers[a])
   };
   a.prototype._createShapeForAnnotation = function(a, c, d) {
     var e = null;
@@ -7407,8 +7402,8 @@ window.Annotorious.ImagePlugin = function() {
       }
     }
   };
-  a.prototype.updateAnnotationAfterCreatingAnnotatorHighlight = function(a) {
-    var c = this.handlers[a.source], d = c._imageAnnotator._viewer, e = null, f;
+  a.prototype.updateAnnotationAfterCreatingAnnotatorHighlight = function(a, c) {
+    var d = this.handlers[c]._imageAnnotator._viewer, e = null, f;
     for(f in d._annotations) {
       var g = d._annotations[f];
       if(g.temporaryID == a.temporaryID) {
@@ -7418,7 +7413,7 @@ window.Annotorious.ImagePlugin = function() {
         g.temporaryID = void 0;
         g.source = a.source;
         g.highlight = a.highlight;
-        this._calculateHeatmapGeometry(g, c._image);
+        this._calculateHeatmapGeometry(g, c);
         break
       }
     }
@@ -7426,21 +7421,21 @@ window.Annotorious.ImagePlugin = function() {
     return e
   };
   a.prototype.addAnnotationFromHighlight = function(a, c, d, e, f) {
-    this.handlers[a.source] ? this._addAnnotationFromHighlight(a, c, d, e, f) : this._saveAnnotationTemporarily(a, c, d, e, f)
+    this.handlers[c] ? this._addAnnotationFromHighlight(a, c, d, e, f) : this._saveAnnotationTemporarily(a, c, d, e, f)
   };
   a.prototype._saveAnnotationTemporarily = function(a, c, d, e, f) {
-    this._temporalAnnotations[a.source] || (this._temporalAnnotations[a.source] = []);
-    this._temporalAnnotations[a.source].push({annotation:a, image:c, shape:d, geometry:e, style:f})
+    this._temporalAnnotations[c] || (this._temporalAnnotations[c] = []);
+    this._temporalAnnotations[c].push({annotation:a, image:c, shape:d, geometry:e, style:f})
   };
   a.prototype._addAnnotationFromHighlight = function(a, c, d, e, f) {
-    c = this.handlers[a.source];
+    c = this.handlers[c];
     d = this._createShapeForAnnotation(d, e, f);
     a.shapes = [d];
     this._calculateHeatmapGeometry(a, c._image);
     c.addAnnotation(a)
   };
   a.prototype.deleteAnnotation = function(a) {
-    this.handlers[a.source].deleteAnnotation(a)
+    this.handlers[a.image].deleteAnnotation(a)
   };
   a.prototype.drawAnnotationHighlights = function(a, c) {
     var d = this.handlers[a]._imageAnnotator._viewer;
@@ -7456,13 +7451,10 @@ window.Annotorious.ImagePlugin = function() {
     });
     e || this.addRemoveImageFocus(a, !1)
   };
-  a.prototype.getImageForAnnotation = function(a) {
-    return this.handlers[a.source]._image
-  };
-  a.prototype.updateShapeStyle = function(a, c) {
-    var d = this.handlers[a.source]._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(a.shapes[0])];
-    a.shapes[0].style = c;
-    d.style = c
+  a.prototype.updateShapeStyle = function(a, c, d) {
+    a = this.handlers[a]._imageAnnotator._viewer._shapes[annotorious.shape.hashCode(c.shapes[0])];
+    c.shapes[0].style = d;
+    a.style = d
   };
   a.prototype.addRemoveImageFocus = function(a, c) {
     var d = this.handlers[a];

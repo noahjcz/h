@@ -514,7 +514,8 @@ class Annotator extends Delegator
     Annotator.$.when(promises...).always =>
 
       # send out notifications and updates
-      this.publish "annotationsLoaded", [this.changedAnnotations]
+      if this.changedAnnotations.length
+        this.publish "annotationsLoaded", [this.changedAnnotations]
       delete this.changedAnnotations
 
       # When all is said and done

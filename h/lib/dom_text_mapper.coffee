@@ -199,9 +199,9 @@ class window.DomTextMapper
 
     if corpusChanged
       lengthDelta = content.length - oldContent.length
-      #@dmp ?= new DTM_DMPMatcher()
-      #diff = @dmp.compare oldContent, content
-      #@log "** Corpus change: ", diff
+      @dmp ?= new DTM_DMPMatcher()
+      diff = @dmp.compare oldContent, content, true
+      @log "** Corpus change: ", diff.diffExplanation
 
     # === Phase 1: Drop the invalidated data
 

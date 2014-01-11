@@ -171,6 +171,8 @@ class window.DomTextMapper
     path = @getPathTo node
     pathInfo = @path[path]
 
+    #@log "Performing update on node @", path
+
     # Do we have data about this node?
     while not pathInfo
       # If not, go up one level.
@@ -195,10 +197,11 @@ class window.DomTextMapper
     # Decide whether we are dealing with a corpus change
     corpusChanged = oldContent isnt content
 
-    #if corpusChanged
-    #  @dmp ?= new DTM_DMPMatcher()
-    #  diff = @dmp.compare oldContent, content
-    #  @log "** Corpus change: ", diff
+    if corpusChanged
+      lengthDelta = content.length - oldContent.length
+      #@dmp ?= new DTM_DMPMatcher()
+      #diff = @dmp.compare oldContent, content
+      #@log "** Corpus change: ", diff
 
     # === Phase 1: Drop the invalidated data
 
@@ -225,9 +228,10 @@ class window.DomTextMapper
 
     if corpusChanged
       #@log "Hmm... overall node content has changed @", path, "!"
-
-      @_alterAncestorsMappingData node, path, oldStart, oldEnd, content
-      @_alterSiblingsMappingData node, oldStart, oldEnd, content
+      unless node is @pathStartNode
+        #@log "Updating ancestors and siblings"
+        @_alterAncestorsMappingData node, path, oldStart, oldEnd, content
+        @_alterSiblingsMappingData node, oldStart, oldEnd, content
 
     # Phase 3: re-scan the invalidated part
 
@@ -242,6 +246,7 @@ class window.DomTextMapper
       # Yes, we have rescanned starting with the root node!
       @log "Ended up rescanning the whole doc."
       @collectPositions node, path, null, 0, 0
+      @_updateCorpus lengthDelta
     else
       # This was not the root path, so we must have a valid parent.
       parentPath = @_parentPath path
@@ -271,6 +276,30 @@ class window.DomTextMapper
     # Return whether the corpus has changed
     corpusChanged
 
+  # Update the corpus
+  _updateCorpus: (lengthDelta) ->
+    #@log "Recalculating corpus."
+    if lengthDelta
+      #@log "(Length delta:", lengthDelta, ")"
+    else
+      lengthDelta = 0
+
+    @_corpus = if @expectedContent?  # Do we have expected content?
+      @expectedContent               # There not much to calculate, then
+    else                             # No hard-wired result, let's calculate
+      unless @path["."]
+        @log "We can't find info about root."
+        throw new Error "Internal error"
+      content = @path["."].content   # This is the base we are going to use
+      if @_ignorePos?                # Is there stuff at the end to ignore?
+        @_ignorePos += lengthDelta   # Update the ignore index
+        if @_ignorePos               # Is there anything left?
+          content[ ... @_ignorePos ] # Return the wanted segment
+        else                         # No, whole text is ignored
+          ""                         # Return an empty string
+      else                           # There is no ignore
+        content                      # We are going to use the whole content
+
 
   # Given the fact the the corpus of a given note has changed,
   # update the mapping info of its ancestors
@@ -281,24 +310,7 @@ class window.DomTextMapper
 
     # Is this the root node?
     if node is @pathStartNode
-
-      # Update the corpus
-      @_corpus = if @expectedContent?  # Do we have expected content?
-        @expectedContent               # There not much to calculate, then
-      else                             # No hard-wired result, let's calculate
-        unless @path[path]
-          console.log "We are @ path", path, "but we can't find info about it."
-          console.log @path
-          throw new Error "Internal error"
-        content = @path[path].content  # This is the base we are going to use
-        if @_ignorePos?                # Is there stuff at the end to ignore?
-          @_ignorePos += lengthDelta   # Update the ignore index
-          if @_ignorePos               # Is there anything left?
-            content[ ... @_ignorePos ] # Return the wanted segment
-          else                         # No, whole text is ignored
-            ""                         # Return an empty string
-        else                           # There is no ignore
-          content                      # We are going to use the whole content
+      @_updateCorpus lengthDelta
 
       # There are no more ancestors, so return
       return

@@ -7,7 +7,7 @@
 ** Dual licensed under the MIT and GPLv3 licenses.
 ** https://github.com/okfn/annotator/blob/master/LICENSE
 **
-** Built at: 2014-01-11 13:34:20Z
+** Built at: 2014-01-13 12:36:52Z
 */
 
 
@@ -300,7 +300,7 @@
     };
 
     TextAnchors.prototype.createFromRangeSelector = function(annotation, target) {
-      var currentQuote, dfd, endInfo, endOffset, error, normedRange, range, savedQuote, selector, startInfo, startOffset, _ref1, _ref2;
+      var currentQuote, dfd, endInfo, endOffset, error, normedRange, q, range, savedQuote, selector, startInfo, startOffset, _ref1, _ref2;
       dfd = this.$.Deferred();
       selector = this.annotator.findSelector(target.selector, "RangeSelector");
       if (selector == null) {
@@ -316,23 +316,24 @@
         dfd.reject("failed to normalize range: " + error.message);
         return dfd.promise();
       }
-      currentQuote = this.annotator.normalizeString((function() {
-        if (this.useDTM) {
-          startInfo = this.annotator.domMapper.getInfoForNode(normedRange.start);
-          startOffset = startInfo.start;
-          if (startOffset == null) {
-            throw new Error("node @ '" + startInfo.path + "' has no start field!");
-          }
-          endInfo = this.annotator.domMapper.getInfoForNode(normedRange.end);
-          endOffset = endInfo.end;
-          if (!endOffset) {
-            throw new Error("node @ '" + endInfo.path + "' has no end field!");
-          }
-          return this.annotator.domMapper.getCorpus().slice(startOffset, +(endOffset - 1) + 1 || 9e9).trim();
-        } else {
-          return normedRange.text().trim();
+      if (this.useDTM) {
+        startInfo = this.annotator.domMapper.getInfoForNode(normedRange.start);
+        startOffset = startInfo.start;
+        if (startOffset == null) {
+          dfd.reject("the saved quote doesn't match");
+          return dfd.promise();
         }
-      }).call(this));
+        endInfo = this.annotator.domMapper.getInfoForNode(normedRange.end);
+        endOffset = endInfo.end;
+        if (endOffset == null) {
+          dfd.reject("the saved quote doesn't match");
+          return dfd.promise();
+        }
+        q = this.annotator.domMapper.getCorpus().slice(startOffset, +(endOffset - 1) + 1 || 9e9).trim();
+        currentQuote = this.annotator.normalizeString(q);
+      } else {
+        currentQuote = this.annotator.normalizeString(normedRange.text().trim());
+      }
       savedQuote = this.getQuoteForTarget(target);
       if ((savedQuote != null) && currentQuote !== savedQuote) {
         dfd.reject("the saved quote doesn't match");

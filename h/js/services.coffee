@@ -185,6 +185,11 @@ class Hypothesis extends Annotator
       $rootScope.annotations = $rootScope.annotations.filter (b) -> b isnt a
       $rootScope.search_annotations = $rootScope.search_annotations.filter (b) -> b.message?
 
+    # Update annotation cards upon changes received from the guests
+    this.subscribe 'annotationsLoaded', (annotations) =>
+      idList = (a.id for a in annotations)
+      $rootScope.$broadcast "annotationsRefreshed", idList
+
   _setupXDM: (options) ->
     $rootScope = @element.injector().get '$rootScope'
 

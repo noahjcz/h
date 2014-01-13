@@ -7387,7 +7387,11 @@ window.Annotorious.ImagePlugin = function() {
     })
   };
   a.prototype.getHighlightsForImage = function(a, c) {
-    var d = [], e = this.handlers[a.src][c];
+    var d = [];
+    if(!this.handlers[a.src]) {
+      return d
+    }
+    var e = this.handlers[a.src][c];
     e && e._imageAnnotator._viewer._annotations.forEach(function(a) {
       d.push(a.highlight)
     });

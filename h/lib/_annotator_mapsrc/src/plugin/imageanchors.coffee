@@ -224,6 +224,8 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @annotator._anchorAllAnnotations hasSelectorWithThisImageSource
 
   _removeImage: (image) =>
+    unless @_imageMap[image.src]? then return
+
     t = @_imageMap[image.src].indexOf image
     @_imageMap[image.src][t..t] = [] if t > -1
 

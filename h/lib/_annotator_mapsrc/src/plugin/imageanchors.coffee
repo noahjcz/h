@@ -83,7 +83,7 @@ class ImageHighlight extends Annotator.Highlight
   # Mark/unmark this hl as active
   setActive: (value, batch = false) ->
     @active = value
-    unless batchl
+    unless batch
       @annotorious.drawAnnotationHighlights @_image, @visibleHighlight
 
   _getDOMElements: -> @_image

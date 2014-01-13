@@ -22,21 +22,37 @@ class Annotator.Guest extends Annotator
           "div.annotorious-hint"
         ].join ", "
         filterAttributeChanges: (node, attributeName, oldValue, newValue) ->
-          return true unless attributeName is "class"
-          newClasses = if newValue then newValue.split " " else []
-          oldClasses = if oldValue then oldValue.split " " else []
-          addedClasses = (c for c in newClasses when c not in oldClasses)
-          removedClasses = (c for c in oldClasses when c not in newClasses)
-          changedClasses = addedClasses.concat removedClasses
-          if changedClasses.length is 1 and changedClasses[0] in [
-            'annotator-hl-active',
-            'annotator-hl-temporary'
-            'annotator-highlights-always-on'
-          ]
-            # We are just switching some highlights. Ignore this.
-            return false
+          if attributeName isnt "class"
+            if node.tagName?.toLowerCase() in ["canvas", "body"] and
+                attributeName is "style"
+              #console.log "Ignoring style change on", node.tagName
+              false
+            else
+              console.log attributeName, "of", node, ":",
+                "'" + oldValue + "'",
+                "->",
+                "'" + newValue + "'"
+              true
           else
-            true
+            newClasses = if newValue then newValue.split " " else []
+            oldClasses = if oldValue then oldValue.split " " else []
+            addedClasses = (c for c in newClasses when c not in oldClasses)
+            removedClasses = (c for c in oldClasses when c not in newClasses)
+            changedClasses = addedClasses.concat removedClasses
+            if changedClasses.length is 1 and changedClasses[0] in [
+              'annotator-hl-active',
+              'annotator-hl-temporary'
+              'annotator-highlights-always-on'
+            ]
+              # We are just switching some highlights. Ignore this.
+              false
+            else if changedClasses.length is 2 and
+                "annotorious-item-focus" in changedClasses and
+                "annotorious-item-unfocus" in changedClasses
+              false
+            else
+              console.log "Class change: ", changedClasses
+              true
     TextAnchors: {}
     FuzzyTextAnchors: {}
     PDF: {}

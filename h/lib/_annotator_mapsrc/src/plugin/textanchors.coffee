@@ -350,21 +350,24 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       return dfd.promise()
 
     # Get the text of this range
-    currentQuote = @annotator.normalizeString if @useDTM
+    if @useDTM
       # Determine the current content of the given range using DTM
 
       startInfo = @annotator.domMapper.getInfoForNode normedRange.start
       startOffset = startInfo.start
       unless startOffset?
-        throw new Error "node @ '" + startInfo.path + "' has no start field!"
+        dfd.reject "the saved quote doesn't match"
+        return dfd.promise()
       endInfo = @annotator.domMapper.getInfoForNode normedRange.end
       endOffset = endInfo.end
-      unless endOffset
-        throw new Error "node @ '" + endInfo.path + "' has no end field!"
-      @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
+      unless endOffset?
+        dfd.reject "the saved quote doesn't match"
+        return dfd.promise()
+      q = @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
+      currentQuote = @annotator.normalizeString q
     else
       # Determine the current content of the given range directly
-      normedRange.text().trim()
+      currentQuote = @annotator.normalizeString normedRange.text().trim()
 
     # Look up the saved quote
     savedQuote = @getQuoteForTarget target

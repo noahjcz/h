@@ -199,13 +199,14 @@ class window.DomTextMapper
 
     if corpusChanged
       lengthDelta = content.length - oldContent.length
-      @dmp ?= new DTM_DMPMatcher()
-      diff = @dmp.compare oldContent, content, true
-      @log "** Corpus change: ", diff.diffExplanation
+      #@dmp ?= new DTM_DMPMatcher()
+      #diff = @dmp.compare oldContent, content, true
+      #@log "** Corpus change (at", path, "):", diff.diffExplanation
+      #@log "Remaining corpus (at", path, "):", content
 
     # === Phase 1: Drop the invalidated data
 
-    # @log "Dropping obsolete path info for children..."
+    #@log "Dropping obsolete path info for children of", path, "..."
     prefix = path + "/" # The path to drop
 
     # Collect the paths to delete (all children of this node)
@@ -790,6 +791,8 @@ class window.DomTextMapper
       return @expectedContent
     content = @getNodeSelectionText node, shouldRestoreSelection
     if (node is @pathStartNode) and @_ignorePos?
+      #@log "getNodeContent for root: cutting stream @", @_ignorePos, ".",
+      #  "(Total length is", content.length, "."
       return content[ 0 ... @_ignorePos ]
 
     content
@@ -1082,7 +1085,7 @@ class window.DomTextMapper
       return
 
     # Actually react to the changes
-#    @log reason, changes
+    #@log reason, changes
 
     # Collect the changed sub-trees
     changedNodes = @_getInvolvedNodes changes

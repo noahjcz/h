@@ -35,7 +35,7 @@ class TextPositionAnchor extends Annotator.Anchor
   _createHighlight: (page) ->
 
     # First we create the range from the stored stard and end offsets
-    mappings = @annotator.domMapper.getMappingsForCharRange @start, @end, [page]
+    mappings = @annotator.anchoring.domMapper.getMappingsForCharRange @start, @end, [page]
 
     # Get the wanted range out of the response of DTM
     realRange = mappings.sections[page].realRange
@@ -83,7 +83,7 @@ class TextRangeAnchor extends Annotator.Anchor
 class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Check whether we can rely on DTM
-  checkDTM: -> @useDTM = @annotator.domMapper?.getCorpus?
+  checkDTM: -> @useDTM = @annotator.anchoring.domMapper?.getCorpus?
 
   # Plugin initialization
   pluginInit: ->
@@ -246,10 +246,10 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     if @useDTM
       # Calculate the quote and context using DTM
 
-      startOffset = (@annotator.domMapper.getInfoForNode rangeStart).start
-      endOffset = (@annotator.domMapper.getInfoForNode rangeEnd).end
-      quote = @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
-      [prefix, suffix] = @annotator.domMapper.getContextForCharRange startOffset, endOffset
+      startOffset = (@annotator.anchoring.domMapper.getInfoForNode rangeStart).start
+      endOffset = (@annotator.anchoring.domMapper.getInfoForNode rangeEnd).end
+      quote = @annotator.anchoring.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
+      [prefix, suffix] = @annotator.anchoring.domMapper.getContextForCharRange startOffset, endOffset
 
       type: "TextQuoteSelector"
       exact: quote
@@ -264,8 +264,8 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Create a TextPositionSelector around a range
   _getTextPositionSelector: (range) ->
-    startOffset = (@annotator.domMapper.getInfoForNode range.start).start
-    endOffset = (@annotator.domMapper.getInfoForNode range.end).end
+    startOffset = (@annotator.anchoring.domMapper.getInfoForNode range.start).start
+    endOffset = (@annotator.anchoring.domMapper.getInfoForNode range.end).end
 
     type: "TextPositionSelector"
     start: startOffset
@@ -326,8 +326,8 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       return dfd.promise()
 
     # Get the current quote
-    corpus = @annotator.domMapper.getCorpus()
-    content = corpus[ anchor.start .. anchor.end-1 ].trim()
+    corpus = @annotator.anchoring.domMapper.getCorpus()
+    content = corpus[ anchor.start ... anchor.end ].trim()
     currentQuote = @annotator.normalizeString content
 
     # Compare it with the stored one
@@ -361,17 +361,17 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     if @useDTM
       # Determine the current content of the given range using DTM
 
-      startInfo = @annotator.domMapper.getInfoForNode normedRange.start
+      startInfo = @annotator.anchoring.domMapper.getInfoForNode normedRange.start
       startOffset = startInfo.start
       unless startOffset?
         dfd.reject "the saved quote doesn't match"
         return dfd.promise()
-      endInfo = @annotator.domMapper.getInfoForNode normedRange.end
+      endInfo = @annotator.anchoring.domMapper.getInfoForNode normedRange.end
       endOffset = endInfo.end
       unless endOffset?
         dfd.reject "the saved quote doesn't match"
         return dfd.promise()
-      q = @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
+      q = @annotator.anchoring.domMapper.getCorpus()[ startOffset ... endOffset ].trim()
       currentQuote = @annotator.normalizeString q
     else
       # Determine the current content of the given range directly
@@ -422,7 +422,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       dfd.reject "no TextPositionSelector found"
       return dfd.promise()
 
-    content = @annotator.domMapper.getCorpus()[selector.start .. selector.end-1].trim()
+    content = @annotator.anchoring.domMapper.getCorpus()[selector.start .. selector.end-1].trim()
     currentQuote = @annotator.normalizeString content
     savedQuote = @getQuoteForTarget target
     if savedQuote? and currentQuote isnt savedQuote
@@ -438,8 +438,8 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     # Create a TextPositionAnchor from this data
     dfd.resolve new TextPositionAnchor @annotator, annotation, target,
       selector.start, selector.end,
-      (@annotator.domMapper.getPageIndexForPos selector.start),
-      (@annotator.domMapper.getPageIndexForPos selector.end),
+      (@annotator.anchoring.domMapper.getPageIndexForPos selector.start),
+      (@annotator.anchoring.domMapper.getPageIndexForPos selector.end),
       currentQuote
 
     dfd.promise()

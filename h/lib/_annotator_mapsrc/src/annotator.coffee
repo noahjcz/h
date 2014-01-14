@@ -296,7 +296,7 @@ class Annotator extends Delegator
   setupAnnotation: (annotation) ->
 
     # To work with annotations, we need to set up the anchoring system
-    this.anchoring.init()
+    this.anchoring?.init()
 
     # If this is a new annotation, we might have to add the targets
     annotation.target ?= @selectedTargets
@@ -305,7 +305,7 @@ class Annotator extends Delegator
     unless annotation.target?
       throw new Error "Can not run setupAnnotation(). No target or selection available."
 
-    this.anchoring.onSetup annotation
+    this.anchoring?.onSetup annotation
 
   # Public: Publishes the 'beforeAnnotationUpdated' and 'annotationUpdated'
   # events. Listeners wishing to modify an updated annotation should subscribe
@@ -337,7 +337,7 @@ class Annotator extends Delegator
   # Returns deleted annotation.
   deleteAnnotation: (annotation) ->
 
-    this.anchoring.onDelete annotation
+    this.anchoring?.onDelete annotation
 
     this.publish('annotationDeleted', [annotation])
     annotation
@@ -606,12 +606,12 @@ class Annotator extends Delegator
     this.setupAnnotation(annotation).then (annotation) =>
 
       # Show a temporary highlight so the user can see what they selected
-      this.anchoring.onSetTemporary annotation, true
+      this.anchoring?.onSetTemporary annotation, true
 
       # Make the highlights permanent if the annotation is saved
       save = =>
         do cleanup
-        this.anchoring.onSetTemporary annotation, false
+        this.anchoring?.onSetTemporary annotation, false
 
         # Fire annotationCreated events so that plugins can react to them
         this.publish('annotationCreated', [annotation])

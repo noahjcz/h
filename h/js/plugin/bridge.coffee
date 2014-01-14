@@ -117,65 +117,97 @@ class Annotator.Plugin.Bridge extends Annotator.Plugin
 
     ## Remote method call bindings
     .bind('setupAnnotation', (txn, annotation) =>
-      this._format (@annotator.setupAnnotation (this._parse annotation))
+      try
+        this._format (@annotator.setupAnnotation (this._parse annotation))
+      catch error
+        console.log error.stack
+        throw error
     )
 
     .bind('beforeCreateAnnotation', (txn, annotation) =>
-      annotation = this._parse annotation
-      delete @cache[annotation.$$tag]
-      @annotator.publish 'beforeAnnotationCreated', annotation
-      @cache[annotation.$$tag] = annotation
-      this._format annotation
+      try
+        annotation = this._parse annotation
+        delete @cache[annotation.$$tag]
+        @annotator.publish 'beforeAnnotationCreated', annotation
+        @cache[annotation.$$tag] = annotation
+        this._format annotation
+      catch error
+        console.log error.stack
+        throw error
     )
 
     .bind('createAnnotation', (txn, annotation) =>
-      annotation = this._parse annotation
-      delete @cache[annotation.$$tag]
-      @annotator.publish 'annotationCreated', annotation
-      @cache[annotation.$$tag] = annotation
-      this._format annotation
+      try
+        annotation = this._parse annotation
+        delete @cache[annotation.$$tag]
+        @annotator.publish 'annotationCreated', annotation
+        @cache[annotation.$$tag] = annotation
+        this._format annotation
+      catch error
+        console.log error.stack
+        throw error
     )
 
     .bind('updateAnnotation', (txn, annotation) =>
-      annotation = this._parse annotation
-      delete @cache[annotation.$$tag]
-      annotation = @annotator.updateAnnotation annotation
-      @cache[annotation.$$tag] = annotation
-      this._format annotation
+      try
+        annotation = this._parse annotation
+        delete @cache[annotation.$$tag]
+        annotation = @annotator.updateAnnotation annotation
+        @cache[annotation.$$tag] = annotation
+        this._format annotation
+      catch error
+        console.log error.stack
+        throw error
     )
 
     .bind('deleteAnnotation', (txn, annotation) =>
-      annotation = this._parse annotation
-      delete @cache[annotation.$$tag]
-      annotation = @annotator.deleteAnnotation annotation
-      res = this._format annotation
-      delete @cache[annotation.$$tag]
-      res
+      try
+        annotation = this._parse annotation
+        delete @cache[annotation.$$tag]
+        annotation = @annotator.deleteAnnotation annotation
+        res = this._format annotation
+        delete @cache[annotation.$$tag]
+        res
+      catch error
+        console.log error.stack
+        throw error
     )
 
     ## Notifications
     .bind('loadAnnotations', (txn, annotations) =>
-      # First, parse the existing ones, for any updates
-      oldOnes = (this._parse a for a in annotations when @cache[a.tag])
+      try
+        # First, parse the existing ones, for any updates
+        oldOnes = (this._parse a for a in annotations when @cache[a.tag])
 
-      # Announce the changes in old annotations
-      if oldOnes.length
-        @selfPublish = true
-        @annotator.publish 'annotationsLoaded', [oldOnes]
-        delete @selfPublish
+        # Announce the changes in old annotations
+        if oldOnes.length
+          @selfPublish = true
+          @annotator.publish 'annotationsLoaded', [oldOnes]
+          delete @selfPublish
 
-      # Then collect the new ones
-      newOnes = (this._parse a for a in annotations when not @cache[a.tag])
-      if newOnes.length
-        @annotator.loadAnnotations newOnes
+        # Then collect the new ones
+        newOnes = (this._parse a for a in annotations when not @cache[a.tag])
+        if newOnes.length
+          @annotator.loadAnnotations newOnes
+      catch error
+        console.log error.stack
+        throw error
     )
 
     .bind('showEditor', (ctx, annotation) =>
-      @annotator.showEditor (this._parse annotation)
+      try
+        @annotator.showEditor (this._parse annotation)
+      catch error
+        console.log error.stack
+        throw error
     )
 
     .bind('enableAnnotating', (ctx, state) =>
-      @annotator.enableAnnotating state, false
+      try
+        @annotator.enableAnnotating state, false
+      catch error
+        console.log error.stack
+        throw error
     )
 
   # Send out a beacon to let other frames know to connect to us

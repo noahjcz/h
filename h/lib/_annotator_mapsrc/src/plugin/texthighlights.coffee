@@ -1,6 +1,10 @@
 # This plugin containts the text highlight implementation,
 # required for annotating text.
 
+unless Annotator.Highlight?
+  console.log "TexhHighlights: Have you loaded the EnhancedAnchoring plugin?"
+  return
+
 class TextHighlight extends Annotator.Highlight
 
   # Save the Annotator class reference, while we have access to it.
@@ -104,7 +108,7 @@ class TextHighlight extends Annotator.Highlight
   removeFromDocument: ->
     for hl in @_highlights
       # Is this highlight actually the part of the document?
-      if hl.parentNode? and @annotator.domMapper.isPageMapped @pageIndex
+      if hl.parentNode? and @annotator.anchoring.domMapper.isPageMapped @pageIndex
         # We should restore original state
         child = hl.childNodes[0]
         @$(hl).replaceWith hl.childNodes
@@ -116,5 +120,9 @@ class Annotator.Plugin.TextHighlights extends Annotator.Plugin
 
   # Plugin initialization
   pluginInit: ->
+    # This plugin is intended to be used with the Enhanced Anchoring architecture.
+    unless @annotator.plugins.EnhancedAnchoring
+      throw new Error "The TextHighlights Annotator plugin requires the EnhancedAnchoring plugin."
+
     # Export the text highlight class for other plugins
     Annotator.TextHighlight = TextHighlight

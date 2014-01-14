@@ -163,7 +163,7 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
   _collectVirtualAnnotations: (startPage, endPage) ->
     results = []
     for page in [startPage .. endPage]
-      anchors = @annotator.anchors[page]
+      anchors = @annotator.anchoring.anchors[page]
       if anchors?
         $.merge results, (anchor.annotation for anchor in anchors when not anchor.fullyRealized)
     results
@@ -219,7 +219,7 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
     startPage = anchor.startPage
 
     # Is this rendered?
-    if @annotator.domMapper.isPageMapped startPage
+    if @annotator.anchoring.domMapper.isPageMapped startPage
       # If it was rendered, then we only have one result. Go there.
       hl = anchor.highlight[startPage]
       hl.paddedScrollTo direction
@@ -230,11 +230,11 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
         count: next.length
         page: startPage
         direction: direction
-      @annotator.domMapper.setPageIndex startPage
+      @annotator.anchoring.domMapper.setPageIndex startPage
 
   _update: =>
     wrapper = @annotator.wrapper
-    highlights = @annotator.getHighlights()
+    highlights = @annotator.anchoring.getHighlights()
     defaultView = wrapper[0].ownerDocument.defaultView
 
     # Keep track of buckets of annotations above and below the viewport
@@ -242,7 +242,7 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
     below = []
 
     # Get the page numbers
-    mapper = @annotator.domMapper
+    mapper = @annotator.anchoring.domMapper
     firstPage = 0
     currentPage = mapper.getPageIndex()
     lastPage = mapper.getPageCount() - 1
@@ -435,7 +435,7 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
 
       # Creates highlights corresponding bucket when mouse is hovered
       .on 'mousemove', (bucket) =>
-        for hl in @annotator.getHighlights()
+        for hl in @annotator.anchoring.getHighlights()
           if hl.annotation in @buckets[bucket]
             hl.setActive true, true
           else
@@ -445,7 +445,7 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
 
       # Gets rid of them after
       .on 'mouseout', =>
-        for hl in @annotator.getHighlights()
+        for hl in @annotator.anchoring.getHighlights()
           unless hl.isTemporary()
             hl.setActive false, true
         @annotator.publish "finalizeHighlights"
@@ -490,7 +490,7 @@ class Annotator.Plugin.Heatmap extends Annotator.Plugin
   _fillDynamicBucket: =>
     top = window.pageYOffset
     bottom = top + $(window).innerHeight()
-    anchors = @annotator.getHighlights()
+    anchors = @annotator.anchoring.getHighlights()
     visible = anchors.reduce (acc, hl) =>
       if top <= hl.getTop() <= bottom
         if hl.annotation not in acc

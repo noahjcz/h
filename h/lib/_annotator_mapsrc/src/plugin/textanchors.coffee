@@ -4,6 +4,10 @@
 #  * the anchor class,
 #  * the basic anchoring strategies
 
+unless Annotator.Anchor?
+  console.log "TexhAnchors: Have you loaded the EnhancedAnchoring plugin?"
+  return
+
 # This anhor type stores information about a piece of text,
 # described using start and end character offsets
 class TextPositionAnchor extends Annotator.Anchor
@@ -83,6 +87,10 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Plugin initialization
   pluginInit: ->
+    # This plugin is intended to be used with the Enhanced Anchoring architecture.
+    unless @annotator.plugins.EnhancedAnchoring
+      throw new Error "The TextHighlights Annotator plugin requires the EnhancedAnchoring plugin."
+
     # We need text highlights
     unless @annotator.plugins.TextHighlights
       throw new Error "The TextAnchors Annotator plugin requires the TextHighlights plugin."
@@ -91,13 +99,13 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     @$ = Annotator.$
         
     # Register our anchoring strategies
-    @annotator.anchoringStrategies.push
+    @annotator.anchoring.anchoringStrategies.push
       # Simple strategy based on DOM Range
       name: "range"
       create: @createFromRangeSelector
       verify: @verifyTextAnchor
 
-    @annotator.anchoringStrategies.push
+    @annotator.anchoring.anchoringStrategies.push
       # Position-based strategy. (The quote is verified.)
       # This can handle document structure changes,
       # but not the content changes.

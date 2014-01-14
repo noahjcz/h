@@ -10,10 +10,10 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     unless @annotator.plugins.TextAnchors
       throw "The FuzzyTextAnchors Annotator plugin requires the TextAnchors plugin."
     # Initialize the text matcher library
-    @textFinder = new DomTextMatcher => @annotator.domMapper.getCorpus()
+    @textFinder = new DomTextMatcher => @annotator.anchoring.domMapper.getCorpus()
 
     # Register our fuzzy strategies
-    @annotator.anchoringStrategies.push
+    @annotator.anchoring.anchoringStrategies.push
       # Two-phased fuzzy text matching strategy. (Using context and quote.)
       # This can handle document structure changes,
       # and also content changes.
@@ -21,7 +21,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
       create: @twoPhaseFuzzyMatching
       verify: @verifyFuzzyTextAnchor
 
-    @annotator.anchoringStrategies.push
+    @annotator.anchoring.anchoringStrategies.push
       # Naive fuzzy text matching strategy. (Using only the quote.)
       # This can handle document structure changes,
       # and also content changes.
@@ -51,7 +51,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     dfd = @$.Deferred()
 
     # We need the corpus from the document.
-    unless @annotator.domMapper.getCorpus
+    unless @annotator.anchoring.domMapper.getCorpus
       dfd.reject "can't get corpus of document"
       return dfd.promise()
 
@@ -76,7 +76,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     expectedEnd = posSelector?.end
 
     options =
-      contextMatchDistance: @annotator.domMapper.getCorpus().length * 2
+      contextMatchDistance: @annotator.anchoring.domMapper.getCorpus().length * 2
       contextMatchThreshold: 0.5
       patternMatchThreshold: 0.5
       flexContext: true
@@ -97,8 +97,8 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     # Create a TextPositionAnchor from this data
     dfd.resolve new @Annotator.TextPositionAnchor @annotator, annotation, target,
       match.start, match.end,
-      (@annotator.domMapper.getPageIndexForPos match.start),
-      (@annotator.domMapper.getPageIndexForPos match.end),
+      (@annotator.anchoring.domMapper.getPageIndexForPos match.start),
+      (@annotator.anchoring.domMapper.getPageIndexForPos match.end),
       match.found,
       unless match.exact then match.comparison.diffHTML,
       unless match.exact then match.exactExceptCase
@@ -110,7 +110,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     dfd = @$.Deferred()
 
     # We need the corpus from the document.
-    unless @annotator.domMapper.getCorpus
+    unless @annotator.anchoring.domMapper.getCorpus
       dfd.reject "can't get corpus of the document"
       return dfd.promise()
 
@@ -138,7 +138,7 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     expectedStart = posSelector?.start
 
     # Get full document length
-    len = @annotator.domMapper.getCorpus().length
+    len = @annotator.anchoring.domMapper.getCorpus().length
 
     # If we don't have the position saved, start at the middle of the doc
     expectedStart ?= Math.floor(len / 2)
@@ -164,8 +164,8 @@ class Annotator.Plugin.FuzzyTextAnchors extends Annotator.Plugin
     dfd.resolve new @Annotator.TextPositionAnchor @annotator, annotation,
       target,
       match.start, match.end,
-      (@annotator.domMapper.getPageIndexForPos match.start),
-      (@annotator.domMapper.getPageIndexForPos match.end),
+      (@annotator.anchoring.domMapper.getPageIndexForPos match.start),
+      (@annotator.anchoring.domMapper.getPageIndexForPos match.end),
       match.found,
       unless match.exact then match.comparison.diffHTML,
       unless match.exact then match.exactExceptCase

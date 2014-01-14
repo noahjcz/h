@@ -111,6 +111,10 @@ annotator_dtm = Uglify(
     'lib/annotator.domtextmapper.js',
     output='lib/annotator.dtm.min.js'
 )
+annotator_enhancedanchoring = Uglify(
+    'lib/annotator.enhancedanchoring.js',
+    output='lib/annotator.enhancedanchoring.min.js'
+)
 annotator_texthl = Uglify(
     'lib/annotator.texthighlights.js',
     output='lib/annotator.texthighlights.min.js'
@@ -298,6 +302,7 @@ inject = Bundle(
     annotator_bridge,
     annotator_document,
     annotator_heatmap,
+    annotator_enhancedanchoring,
     annotator_texthl,
     annotator_dtm,
     annotator_textanchors,

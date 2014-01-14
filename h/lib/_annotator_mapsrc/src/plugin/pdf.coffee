@@ -128,7 +128,6 @@ class window.PDFTextMapper extends window.PageTextMapperCore
     # Look up the page
     @pageInfo[index]
 
-
 # Annotator plugin for annotating documents handled by PDF.js
 class Annotator.Plugin.PDF extends Annotator.Plugin
 
@@ -137,7 +136,7 @@ class Annotator.Plugin.PDF extends Annotator.Plugin
     unless @annotator.plugins.DomTextMapper
       throw "The PDF Annotator plugin requires the DomTextMapper plugin."
 
-    @annotator.documentAccessStrategies.unshift
+    @annotator.anchoring.documentAccessStrategies.unshift
       # Strategy to handle PDF documents rendered by PDF.js
       name: "PDF.js"
       applicable: PDFTextMapper.applicable

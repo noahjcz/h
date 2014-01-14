@@ -2,10 +2,13 @@
 class Annotator.Plugin.DomTextMapper extends Annotator.Plugin
 
   pluginInit: ->
+    # This plugin is intended to be used with the Enhanced Anchoring architecture.
+    unless @annotator.plugins.EnhancedAnchoring
+      throw new Error "The TextHighlights Annotator plugin requires the EnhancedAnchoring plugin."
 
     @Annotator = Annotator
 
-    @annotator.documentAccessStrategies.unshift
+    @annotator.anchoring.documentAccessStrategies.unshift
       # Document access strategy for simple HTML documents,
       # with enhanced text extraction and mapping features.
       name: "DOM-Text-Mapper"
@@ -25,7 +28,7 @@ class Annotator.Plugin.DomTextMapper extends Annotator.Plugin
         mapper = new window.DomTextMapper options
         options.rootNode.addEventListener "corpusChange", =>
           t0 = mapper.timestamp()
-          @annotator._reanchorAllAnnotations("corpus change").then ->
+          @annotator.anchoring._reanchorAllAnnotations("corpus change").then ->
             t1 = mapper.timestamp()
             console.log "corpus change -> refreshed text annotations.",
               "Time used: ", t1-t0, "ms"

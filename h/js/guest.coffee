@@ -10,6 +10,7 @@ class Annotator.Guest extends Annotator
 
   # Plugin configuration
   options:
+    EnhancedAnchoring: {}
     TextHighlights: {}
     DomTextMapper:
       options:
@@ -98,12 +99,12 @@ class Annotator.Guest extends Annotator
           @comments[i..i] = []
           @plugins.Heatmap._update()
 
-    # Choose a document access policy.
+    # Init the anchoring system.
     #
     # This would be done automatically when the annotations
     # are loaded, but we need it sooner, so that the heatmap
     # can work properly.
-    this._chooseAccessPolicy()
+    this.anchoring.init()
 
   _setupXDM: (options) ->
     # jschannel chokes FF and Chrome extension origins.
@@ -125,7 +126,7 @@ class Annotator.Guest extends Annotator
     )
 
     .bind('setActiveHighlights', (ctx, tags=[]) =>
-      for hl in @getHighlights()
+      for hl in @anchoring.getHighlights()
         if hl.annotation.$$tag in tags
           hl.setActive true, true
         else
@@ -135,7 +136,7 @@ class Annotator.Guest extends Annotator
     )
 
     .bind('scrollTo', (ctx, tag) =>
-      for hl in @getHighlights()
+      for hl in @anchoring.getHighlights()
         if hl.annotation.$$tag is tag
           hl.scrollTo()
           return
@@ -362,14 +363,14 @@ class Annotator.Guest extends Annotator
     # Also extract the quotation and serialize the ranges
     this.setupAnnotation(this.createAnnotation()).then (annotation) =>
 
-      hl.setTemporary(true) for hl in @getHighlights([annotation])
+      hl.setTemporary(true) for hl in @anchoring.getHighlights([annotation])
 
       # Subscribe to the editor events
 
       # Make the highlights permanent if the annotation is saved
       save = =>
         do cleanup
-        hl.setTemporary false for hl in @getHighlights [annotation]
+        hl.setTemporary false for hl in @anchoring.getHighlights [annotation]
 
       # Remove the highlights if the edit is cancelled
       cancel = =>

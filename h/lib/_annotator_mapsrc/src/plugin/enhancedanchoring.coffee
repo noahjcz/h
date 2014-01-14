@@ -175,6 +175,7 @@ class Highlight
   constructor: (@anchor, @pageIndex) ->
     @annotator = @anchor.annotator
     @annotation = @anchor.annotation
+    @$ = Annotator.$
 
   # Mark/unmark this hl as temporary (while creating an annotation)
   setTemporary: (value) ->
@@ -214,16 +215,17 @@ class Highlight
     throw "Operation not implemented."
 
   # Get the Y offset of the highlight. Override for more control
-  getTop: -> $(@_getDOMElements()).offset().top
+  getTop: -> @$(@_getDOMElements()).offset().top
 
   # Get the height of the highlight. Override for more control
-  getHeight: -> $(@_getDOMElements()).outerHeight true
+  getHeight: -> @$(@_getDOMElements()).outerHeight true
 
   # Get the bottom Y offset of the highlight. Override for more control.
   getBottom: -> @getTop() + @getBottom()
 
   # Scroll the highlight into view. Override for more control
-  scrollTo: -> $(@_getDOMElements()).scrollintoview()
+  scrollTo: ->
+    @$(@_getDOMElements()).scrollintoview()
 
   # Scroll the highlight into view, with a comfortable margin.
   # up should be true if we need to scroll up; false otherwise
@@ -237,9 +239,9 @@ class Highlight
     where.scrollintoview
       complete: ->
         scrollable = if this.parentNode is this.ownerDocument
-          $(this.ownerDocument.body)
+          @$(this.ownerDocument.body)
         else
-          $(this)
+          @$(this)
         top = scrollable.scrollTop()
         correction = pad * dir
         scrollable.stop().animate {scrollTop: top + correction}, 300

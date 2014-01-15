@@ -6881,7 +6881,7 @@ annotorious.events.ui.EventType = {DOWN:annotorious.events.ui.hasTouch ? goog.ev
 CLICK:annotorious.events.ui.hasTouch ? goog.events.EventType.TOUCHEND : goog.events.EventType.CLICK};
 annotorious.events.ui.sanitizeCoordinates = function(a, b) {
   var c = !1, c = annotorious.dom.getOffset;
-  return c = !a.offsetX || !a.offsetY && a.event_.changedTouches ? {x:a.event_.changedTouches[0].clientX - c(b).left, y:a.event_.changedTouches[0].clientY - c(b).top} : {x:a.offsetX, y:a.offsetY}
+  return c = (!a.offsetX || !a.offsetY) && a.event_.changedTouches ? {x:a.event_.changedTouches[0].clientX - c(b).left, y:a.event_.changedTouches[0].clientY - c(b).top} : {x:a.offsetX, y:a.offsetY}
 };
 annotorious.plugins = {};
 annotorious.plugins.selection = {};

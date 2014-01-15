@@ -40,7 +40,7 @@ class ImageHighlight extends Annotator.Highlight
       text: @annotation.text
       id: @annotation.id
       temporaryID: @annotation.temporaryImageID
-      source: image.src.trim()
+      image: image
       highlight: this
 
     if @annotation.temporaryImageID

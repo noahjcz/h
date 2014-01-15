@@ -7290,7 +7290,7 @@ annotorious.okfn.ImagePlugin = function(a, b, c, d) {
   this._imageAnnotator._eventBroker.removeHandler(annotorious.events.EventType.SELECTION_CANCELED, a);
   this._newSelectionHandler = function(a) {
     e.maybeClicked = !1;
-    var b = e._imageAnnotator._image.src + "#" + (new Date).toString(), c = {source:e._imageAnnotator._image.src, shapes:[a.shape], temporaryID:b};
+    var b = e._imageAnnotator._image.src + "#" + (new Date).toString(), c = {shapes:[a.shape], temporaryID:b, image:e._imageAnnotator._image};
     e._imageAnnotator.addAnnotation(c);
     e._imageAnnotator.stopSelection();
     e._imagePlugin.annotate(e._imageAnnotator._image, e._index, a.shape.type, a.shape.geometry, b, c)
@@ -7435,6 +7435,7 @@ window.Annotorious.ImagePlugin = function() {
     c.addAnnotation(a)
   };
   a.prototype.deleteAnnotation = function(a) {
+    console.log("Delete annotation", a);
     this.handlers[a.image].deleteAnnotation(a)
   };
   a.prototype.drawAnnotationHighlights = function(a, c) {

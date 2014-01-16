@@ -7359,13 +7359,24 @@ window.Annotorious.ImagePlugin = function() {
   }
   a.prototype.addImage = function(a, c) {
     var d = this, e = function(a, b, c) {
-      var e = new annotorious.okfn.ImagePlugin(a, b, d.imagePlugin, d._el);
-      d.options.read_only && e.disableSelection();
-      c[a.src] || (c[a.src] = []);
-      c[a.src][b] = e;
-      d._temporalAnnotations[a] && (d._temporalAnnotations[a].forEach(function(a) {
-        d._addAnnotationFromHighlight(a.annotation, a.image, a.index, a.shape, a.geometry, a.style)
-      }), d._temporalAnnotations[a] = [])
+      var e = a.style;
+      if(e["-moz-user-select"] && "none" == e["-moz-user-select"] || e["-webkit-user-select"] && "none" == e["-webkit-user-select"] || e["-ms-user-select"] && "none" == e["-ms-user-select"]) {
+        d.imagePlugin._removeImage(a)
+      }else {
+        if(d.options.minHeight || d.options.minWidth) {
+          if(e = a.getBoundingClientRect(), d.options.minHeight && e.height < d.options.minHeight || d.options.minWidth && e.width < d.options.minWidth) {
+            d.imagePlugin._removeImage(a);
+            return
+          }
+        }
+        e = new annotorious.okfn.ImagePlugin(a, b, d.imagePlugin, d._el);
+        d.options.read_only && e.disableSelection();
+        c[a.src] || (c[a.src] = []);
+        c[a.src][b] = e;
+        d._temporalAnnotations[a] && (d._temporalAnnotations[a].forEach(function(a) {
+          d._addAnnotationFromHighlight(a.annotation, a.image, a.index, a.shape, a.geometry, a.style)
+        }), d._temporalAnnotations[a] = [])
+      }
     };
     a.complete ? e(a, c, d.handlers) : a.addEventListener("load", function() {
       e(a, c, d.handlers)
@@ -7379,8 +7390,10 @@ window.Annotorious.ImagePlugin = function() {
     return d
   };
   a.prototype.removeImage = function(a, c) {
-    var d = this.handlers[a.src][c];
-    d && (d.destroy(), this.handlers[a.src].splice(c, 1))
+    if(this.handlers[a.src]) {
+      var d = this.handlers[a.src][c];
+      d && (d.destroy(), this.handlers[a.src].splice(c, 1))
+    }
   };
   a.prototype._createShapeForAnnotation = function(a, c, d) {
     var e = null;

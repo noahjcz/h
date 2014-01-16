@@ -145,7 +145,11 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     wrapper = @annotator.wrapper[0]
 
     # Initalizing the Annotorious plugin
-    @annotorious = new Annotorious.ImagePlugin wrapper, {}, this
+    annotoriousOptions =
+      minWidth: 50
+      minHeight: 50
+
+    @annotorious = new Annotorious.ImagePlugin wrapper, annotoriousOptions, this
 
     imagelist = $(wrapper).find('img:visible')
     @_addImage image for image in imagelist
@@ -209,7 +213,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @_imageMap[image.src][t..t] = [] if t > -1
 
     # Remove it from annotorious too
-    @annotorious.removeImage image, index
+    @annotorious.removeImage image, t
 
   _onMutation: (summaries) =>
     for summary in summaries

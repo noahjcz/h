@@ -27,7 +27,7 @@ class ImageHighlight extends Annotator.Highlight
   @Annotator = Annotator
   @$ = Annotator.$
 
-  constructor: (anchor, pageIndex, image, shape, geometry, @annotorious) ->
+  constructor: (anchor, pageIndex, image, index, shape, geometry, @annotorious) ->
     super anchor, pageIndex
 
     @$ = ImageHighlight.$
@@ -41,25 +41,24 @@ class ImageHighlight extends Annotator.Highlight
       id: @annotation.id
       temporaryID: @annotation.temporaryImageID
       image: image
+      index: index
       highlight: this
 
     if @annotation.temporaryImageID
-      @annotoriousAnnotation = @annotorious.updateAnnotationAfterCreatingAnnotatorHighlight @annotoriousAnnotation, image
+      @annotoriousAnnotation = @annotorious.updateAnnotationAfterCreatingAnnotatorHighlight @annotoriousAnnotation, image, index
       # Sometimes (like forced login) there is no @annotorious annotation
       # Let's recreate this annotation
       if @annotoriousAnnotation._bad?
         @annotation.temporaryImageID = undefined
-        @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
+        @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, index, shape, geometry, @defaultStyle
         @annotoriousAnnotation.temporaryID = undefined
         @annotoriousAnnotation._bad = undefined
     else
-      @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, shape, geometry, @defaultStyle
+      @annotorious.addAnnotationFromHighlight @annotoriousAnnotation, image, index, shape, geometry, @defaultStyle
 
     @oldID = @annotation.id
     @_image = image
-    # TODO: prepare event handlers that call @annotator's
-    # onAnchorMouseover, onAnchorMouseout, onAnchorMousedown, onAnchorClick
-    # methods, with the appropriate list of annotations
+    @_index = index
 
   # React to changes in the underlying annotation
   annotationUpdated: ->
@@ -84,7 +83,7 @@ class ImageHighlight extends Annotator.Highlight
   setActive: (value, batch = false) ->
     @active = value
     unless batch
-      @annotorious.drawAnnotationHighlights @_image, @visibleHighlight
+      @annotorious.drawAnnotationHighlights @_image, @_index, @visibleHighlight
 
   _getDOMElements: -> @_image
 
@@ -105,17 +104,17 @@ class ImageHighlight extends Annotator.Highlight
   setVisibleHighlight: (state, batch = false) ->
     @visibleHighlight = state
     if state
-      @annotorious.updateShapeStyle @_image, @annotoriousAnnotation, @highlightStyle
+      @annotorious.updateShapeStyle @annotoriousAnnotation, @highlightStyle
     else
-      @annotorious.updateShapeStyle @_image, @annotoriousAnnotation, @defaultStyle
+      @annotorious.updateShapeStyle @annotoriousAnnotation, @defaultStyle
 
     unless batch
-      @annotorious.drawAnnotationHighlights @_image, @visibleHighlight
+      @annotorious.drawAnnotationHighlights @_image, @_index, @visibleHighlight
 
 class ImageAnchor extends Annotator.Anchor
 
   constructor: (annotator, annotation, target,
-      startPage, endPage, quote, @image, @shape, @geometry, @annotorious) ->
+      startPage, endPage, quote, @image, @index, @shape, @geometry, @annotorious) ->
 
     super annotator, annotation, target, startPage, endPage, quote
 
@@ -127,7 +126,7 @@ class ImageAnchor extends Annotator.Anchor
 
     # Create the highlight
     new ImageHighlight this, page,
-      @image, @shape, @geometry, @annotorious
+      @image, @index, @shape, @geometry, @annotorious
 
 
 # Annotator plugin for image annotations
@@ -166,9 +165,9 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     # Reacting to finalizeHighlights
     @annotator.subscribe "finalizeHighlights", =>
       for src, imageList of @_imageMap
-        for image in imageList
+        for image, index in imageList
           try
-            @annotorious.drawAnnotationHighlights image, @visibleHighlights
+            @annotorious.drawAnnotationHighlights image, index, @visibleHighlights
           catch error
             console.log "Error: failed to draw image highlights for", src
             console.log error.stack
@@ -210,7 +209,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @_imageMap[image.src][t..t] = [] if t > -1
 
     # Remove it from annotorious too
-    @annotorious.removeImage image
+    @annotorious.removeImage image, index
 
   _onMutation: (summaries) =>
     for summary in summaries
@@ -257,14 +256,16 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       hl.setVisibleHighlight state, true
 
     for src, imageList of @_imageMap
-      for image in imageList
-        @annotorious.drawAnnotationHighlights image, @visibleHighlights
+      for image, index in imageList
+        @annotorious.drawAnnotationHighlights image, index, @visibleHighlights
 
   _findAndVerifyImageForSelector: (selector) =>
     # Find the image / verify that it exists
     # TODO: Maybe store image hash and compare them.
     image = undefined
+    index = undefined
     imageList = @_imageMap[selector.source]
+
     if imageList?
       # Backwards compatibility
       unless selector.index then selector.index = 0
@@ -275,23 +276,30 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
         if selector.id?
           # We have a saved image ID
           # Happy happy joy joy we have found the same image!
-          if candidate.id? is selector.id then image = candidate
+          if candidate.id? and candidate.id is selector.id
+            image = candidate
+            index = selector.index
           else
             console.warn 'Selector.id and candidate.id are different', selector.id, candidate.id
             # The IDs are different
             idCandidate = undefined
-            for image in imageList
+            indexCandidate = undefined
+            for image, ind in imageList
               # This case we have a different image with the same source and id, a better match
-              if image.id? is selector.id then idCandidate = image
+              if image.id? is selector.id
+                idCandidate = image
+                indexCandidate = ind
 
             # Wishful thinking
             image = if idCandidate? then idCandidate else candidate
+            index = if indexCandidate? then indexCandidate else selector.index
         else
           # Else we have no other method
           image = candidate
+          index = selector.index
     else
       console.warn 'No image found with source', selector.source
-    image
+    [image, index]
 
   # This method is used by Annotator to attempt to create image anchors
   createImageAnchor: (annotation, target) =>
@@ -306,7 +314,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       dfd.reject "no ImageSelector found"
       return dfd.promise()
 
-    image = @_findAndVerifyImageForSelector selector
+    [image, index] = @_findAndVerifyImageForSelector selector
 
     # If we can't find the image, we fail
     unless image
@@ -316,7 +324,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     # Return an image anchor
     dfd.resolve new ImageAnchor @annotator, annotation, target, # Mandatory data
       0, 0, '', # Page numbers. If we want multi-page (=pdf) support, find that out
-      image, selector.shapeType, selector.geometry, @annotorious
+      image, index, selector.shapeType, selector.geometry, @annotorious
 
     dfd.promise()
 

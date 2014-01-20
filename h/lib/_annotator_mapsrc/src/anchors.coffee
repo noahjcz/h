@@ -16,8 +16,14 @@ class Anchor
 
     # Write our data back to the target
     @target.quote = @quote
-    @target.diffHTML = @diffHTML
-    @target.diffCaseOnly = @diffCaseOnly
+    if @diffHTML
+      @target.diffHTML = @diffHTML
+    else
+      delete @diffHTML
+    if @diffCaseOnly
+      @target.diffCaseOnly = @diffCaseOnly
+    delete
+      @diffCaseOnly
 
     # Store this anchor for the annotation
     @annotation.anchors.push this
@@ -44,7 +50,7 @@ class Anchor
       @annotator.anchors[pageIndex] ?= []
       @annotator.anchors[pageIndex].push this
 
-  # Return highlights for the given page
+  # Creates the highlight for the given page. Should return a promise
   _createHighlight: (page) ->
     throw "Function not implemented"
 
@@ -62,21 +68,30 @@ class Anchor
     return unless pagesTodo.length # Return if nothing to do
 
     try
+      created = []
+      promises = []
+
       # Create the new highlights
-      created = for page in pagesTodo
-        @highlight[page] = @_createHighlight page
+      for page in pagesTodo
+        promises.push p = @_createHighlight page  # Get a promise
+        p.then (hl) => created.push @highlight[page] = hl
 
-      # Check if everything is rendered now
-      @fullyRealized = renderedPages.length is @endPage - @startPage + 1
+      # Wait for all attempts for finish/fail
+      Annotator.$.when(promises...).always =>
+        # Check if everything is rendered now
+        @fullyRealized = renderedPages.length is @endPage - @startPage + 1
 
-      # Announce the creation of the highlights
-      @annotator.publish 'highlightsCreated', created
+        # Announce the creation of the highlights
+        @annotator.publish 'highlightsCreated', created
+
     catch error
       console.log "Error while trying to create highlight:", error.stack
 
       @fullyRealized = false
 
       # Try to undo the highlights already created
+      # TODO: what is some of the async HL creations is still pending?
+      # This try ... catch should be replaced with an async failure handler.
       for page in pagesTodo when @highlight[page]
         try
           @highlight[page].removeFromDocument()

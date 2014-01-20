@@ -18,6 +18,8 @@ class TextPositionAnchor extends Annotator.Anchor
       startPage, endPage,
       quote, diffHTML, diffCaseOnly
 
+    @$ = Annotator.$
+
     # This pair of offsets is the key information,
     # upon which this anchor is based upon.
     unless @start? then throw new Error "start is required!"
@@ -30,20 +32,33 @@ class TextPositionAnchor extends Annotator.Anchor
   # This is how we create a highlight out of this kind of anchor
   _createHighlight: (page) ->
 
-    # First we create the range from the stored stard and end offsets
-    mappings = @annotator.domMapper.getMappingsForCharRange @start, @end, [page]
+    # Prepare the deferred object
+    dfd = @$.Deferred()
 
-    # Get the wanted range out of the response of DTM
-    realRange = mappings.sections[page].realRange
+    # Get the d-t-m in a consistent state
+    @annotator.domMapper.prepare("highlighting").then (s) =>
+      # When the d-t-m is ready, do this
 
-    # Get a BrowserRange
-    browserRange = new @Annotator.Range.BrowserRange realRange
+      # First we create the range from the stored stard and end offsets
+      mappings = s.getMappingsForCharRange @start, @end, [page]
 
-    # Get a NormalizedRange
-    normedRange = browserRange.normalize @annotator.wrapper[0]
+      # Get the wanted range out of the response of DTM
+      realRange = mappings.sections[page].realRange
 
-    # Create the highligh
-    new @Annotator.TextHighlight this, page, normedRange
+      # Get a BrowserRange
+      browserRange = new @Annotator.Range.BrowserRange realRange
+
+      # Get a NormalizedRange
+      normedRange = browserRange.normalize @annotator.wrapper[0]
+
+      # Create the highligh
+      hl = new @Annotator.TextHighlight this, page, normedRange
+
+      # Resolve the promise
+      dfd.resolve hl
+
+    # Return the promise
+    dfd.promise()
 
 # This anhor type stores information about a piece of text,
 # described using the actual reference to the range in the DOM.
@@ -68,18 +83,28 @@ class TextRangeAnchor extends Annotator.Anchor
     unless @range? then throw new Error "range is required!"
 
     @Annotator = TextRangeAnchor.Annotator
+    @$ = Annotator.$
 
   # This is how we create a highlight out of this kind of anchor
   _createHighlight: ->
 
+    # Prepare the deferred object
+    dfd = @$.Deferred()
+
     # Create the highligh
-    new @Annotator.TextHighlight this, 0, @range
+    hl = new @Annotator.TextHighlight this, 0, @range
+
+    # Resolve the promise
+    dfd.resolve hl
+
+    # Return the promise
+    dfd.promise()
 
 
 class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
   # Check whether we can rely on DTM
-  checkDTM: -> @useDTM = @annotator.domMapper?.getCorpus?
+  checkDTM: -> @useDTM = @annotator.domMapper?.ready
 
   # Plugin initialization
   pluginInit: ->
@@ -335,7 +360,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     # Look up the required selector
     selector = @annotator.findSelector target.selector, "RangeSelector"
     unless selector?
-      dfd.reject "no RangeSelector found"
+      dfd.reject "no RangeSelector found", true
       return dfd.promise()
 
     # Before going any further, re-evaluate the presence of DTM
@@ -349,44 +374,64 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       dfd.reject "failed to normalize range: " + error.message
       return dfd.promise()
 
+    # Look up the saved quote
+    savedQuote = @getQuoteForTarget target
+
     # Get the text of this range
     if @useDTM
       # Determine the current content of the given range using DTM
 
-      startInfo = @annotator.domMapper.getInfoForNode normedRange.start
-      startOffset = startInfo.start
-      unless startOffset?
-        dfd.reject "the saved quote doesn't match"
-        return dfd.promise()
-      endInfo = @annotator.domMapper.getInfoForNode normedRange.end
-      endOffset = endInfo.end
-      unless endOffset?
-        dfd.reject "the saved quote doesn't match"
-        return dfd.promise()
-      q = @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
-      currentQuote = @annotator.normalizeString q
-    else
+      # Get the d-t-m in a consistent state
+      @annotator.domMapper.prepare("anchoring").then (s) =>
+        # When the d-t-m is ready, do this
+
+        # determine the start position
+        startInfo = s.getInfoForNode normedRange.start
+        startOffset = startInfo.start
+        unless startOffset?
+          dfd.reject "the saved quote doesn't match"
+          return dfd.promise()
+
+        # determine the end position
+        endInfo = s.getInfoForNode normedRange.end
+        endOffset = endInfo.end
+        unless endOffset?
+          dfd.reject "the saved quote doesn't match"
+          return dfd.promise()
+
+        # extract the content of the document
+        q = s.getCorpus()[ startOffset ... endOffset ].trim()
+        currentQuote = @annotator.normalizeString q
+
+        # Compare saved and current quotes
+        if savedQuote? and currentQuote isnt savedQuote
+          #console.log "Could not apply XPath selector to current document, "+
+          #  "because the quote has changed. "+
+          #  "(Saved quote is '#{savedQuote}'."+
+          #  " Current quote is '#{currentQuote}'.)"
+          dfd.reject "the saved quote doesn't match"
+          return dfd.promise()
+
+        # Create a TextPositionAnchor from the start and end offsets
+        # of this range
+        # (to be used with dom-text-mapper)
+        dfd.resolve new TextPositionAnchor @annotator, annotation, target,
+          startInfo.start, endInfo.end,
+          (startInfo.pageIndex ? 0), (endInfo.pageIndex ? 0),
+          currentQuote
+
+    else # No DTM present
       # Determine the current content of the given range directly
       currentQuote = @annotator.normalizeString normedRange.text().trim()
 
-    # Look up the saved quote
-    savedQuote = @getQuoteForTarget target
-    if savedQuote? and currentQuote isnt savedQuote
-      #console.log "Could not apply XPath selector to current document, " +
-      #  "because the quote has changed. (Saved quote is '#{savedQuote}'." +
-      #  " Current quote is '#{currentQuote}'.)"
-      dfd.reject "the saved quote doesn't match"
-      return dfd.promise()
+      # Compare quotes
+      if savedQuote? and currentQuote isnt savedQuote
+        #console.log "Could not apply XPath selector to current document, " +
+        #  "because the quote has changed. (Saved quote is '#{savedQuote}'." +
+        #  " Current quote is '#{currentQuote}'.)"
+        dfd.reject "the saved quote doesn't match"
+        return dfd.promise()
 
-    if @useDTM
-      # Create a TextPositionAnchor from the start and end offsets
-      # of this range
-      # (to be used with dom-text-mapper)
-      dfd.resolve new TextPositionAnchor @annotator, annotation, target,
-        startInfo.start, endInfo.end,
-        (startInfo.pageIndex ? 0), (endInfo.pageIndex ? 0),
-        currentQuote
-    else
       # Create a TextRangeAnchor from this range
       # (to be used whithout dom-text-mapper)
       dfd.resolve new TextRangeAnchor @annotator, annotation, target,
@@ -411,27 +456,31 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     # We need the TextPositionSelector
     selector = @annotator.findSelector target.selector, "TextPositionSelector"
     unless selector
-      dfd.reject "no TextPositionSelector found"
+      dfd.reject "no TextPositionSelector found", true
       return dfd.promise()
 
-    content = @annotator.domMapper.getCorpus()[selector.start .. selector.end-1].trim()
-    currentQuote = @annotator.normalizeString content
-    savedQuote = @getQuoteForTarget target
-    if savedQuote? and currentQuote isnt savedQuote
-      # We have a saved quote, let's compare it to current content
-      #console.log "Could not apply position selector" +
-      #  " [#{selector.start}:#{selector.end}] to current document," +
-      #  " because the quote has changed. " +
-      #  "(Saved quote is '#{savedQuote}'." +
-      #  " Current quote is '#{currentQuote}'.)"
-      dfd.reject "the saved quote doesn't match"
-      return dfd.promise()
+    # Get the d-t-m in a consistent state
+    @annotator.domMapper.prepare("anchoring").then (s) =>
+      # When the d-t-m is ready, do this
 
-    # Create a TextPositionAnchor from this data
-    dfd.resolve new TextPositionAnchor @annotator, annotation, target,
-      selector.start, selector.end,
-      (@annotator.domMapper.getPageIndexForPos selector.start),
-      (@annotator.domMapper.getPageIndexForPos selector.end),
-      currentQuote
+      content = s.getCorpus()[ selector.start ... selector.end ].trim()
+      currentQuote = @annotator.normalizeString content
+      savedQuote = @getQuoteForTarget target
+      if savedQuote? and currentQuote isnt savedQuote
+        # We have a saved quote, let's compare it to current content
+        #console.log "Could not apply position selector" +
+        #  " [#{selector.start}:#{selector.end}] to current document," +
+        #  " because the quote has changed. " +
+        #  "(Saved quote is '#{savedQuote}'." +
+        #  " Current quote is '#{currentQuote}'.)"
+        dfd.reject "the saved quote doesn't match"
+        return dfd.promise()
+
+      # Create a TextPositionAnchor from this data
+      dfd.resolve new TextPositionAnchor @annotator, annotation, target,
+        selector.start, selector.end,
+        (s.getPageIndexForPos selector.start),
+        (s.getPageIndexForPos selector.end),
+        currentQuote
 
     dfd.promise()

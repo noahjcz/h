@@ -337,8 +337,8 @@ class Annotator extends Delegator
     s = strategies.shift()
 
     # We will do this if this strategy failes
-    onFail = (error) =>
-#      console.log "Anchoring strategy",
+    onFail = (error, boring = false) =>
+#      unless boring then console.log "Anchoring strategy",
 #        "'" + s.name + "'",
 #        "has failed:",
 #        error
@@ -353,6 +353,7 @@ class Annotator extends Delegator
 
     try
       # Get a promise from this strategy
+#      console.log "Executing strategy '" + s.name + "'..."
       iteration = s.create annotation, target
 
       # Run this strategy

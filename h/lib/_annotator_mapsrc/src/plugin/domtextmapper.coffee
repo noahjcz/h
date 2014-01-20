@@ -23,12 +23,23 @@ class Annotator.Plugin.DomTextMapper extends Annotator.Plugin
           cacheIgnoredParts: true
         options = $.extend {}, defaultOptions, @options.options
         mapper = new window.DomTextMapper options
+
+        # Wrap the async "ready()" function in a promise
+        mapper.prepare = (reason) =>
+          # Prepare the deferred object
+          dfd = @Annotator.$.Deferred()
+
+          # Get the d-t-m in a consistent state
+          @annotator.domMapper.ready reason, (s) => dfd.resolve s
+
+          # Return a promise
+          dfd.promise()
+
         options.rootNode.addEventListener "corpusChange", =>
           t0 = mapper.timestamp()
           @annotator._reanchorAllAnnotations("corpus change").then ->
             t1 = mapper.timestamp()
             console.log "corpus change -> refreshed text annotations.",
               "Time used: ", t1-t0, "ms"
-        mapper.scan "we are initializing d-t-m"
         mapper
 

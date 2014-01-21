@@ -223,20 +223,33 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
         container = @Annotator.TextHighlight.getIndependentParent container
       return if @annotator.isAnnotator(container)
 
+    # Before going any further, re-evaluate the presence of DTM
+    @checkDTM()
+
     if selectedRanges.length
-      event.targets = (@getTargetFromRange(r) for r in selectedRanges)
-
-      # Do we have valid page coordinates inside the event
-      # which has triggered this function?
-      unless event.pageX
-        # No, we don't. Adding fake coordinates
-        pos = selectedRanges[0].getEndCoords()
-        event.pageX = pos.x
-        event.pageY = pos.y #- window.scrollY
-
-      @annotator.onSuccessfulSelection event
+      if @useDTM
+        @annotator.domMapper.prepare("creating selectors").then (state) =>
+          @_collectTargets event, selectedRanges, state
+      else
+        @_collectTargets event, selectedRanges
     else
       @annotator.onFailedSelection event
+
+  # Build the targets from the annotation.
+  #
+  # Called when d-t-m is already prepared (or unavailable)
+  _collectTargets: (event, selectedRanges, state) ->
+    event.targets = (@getTargetFromRange(r, state) for r in selectedRanges)
+
+    # Do we have valid page coordinates inside the event
+    # which has triggered this function?
+    unless event.pageX
+      # No, we don't. Adding fake coordinates
+      pos = selectedRanges[0].getEndCoords()
+      event.pageX = pos.x
+      event.pageY = pos.y #- window.scrollY
+
+    @annotator.onSuccessfulSelection event
 
   # Create a RangeSelector around a range
   _getRangeSelector: (range) ->
@@ -249,7 +262,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     endOffset: sr.endOffset
 
   # Create a TextQuoteSelector around a range
-  _getTextQuoteSelector: (range) ->
+  _getTextQuoteSelector: (range, state) ->
     unless range?
       throw new Error "Called getTextQuoteSelector(range) with null range!"
 
@@ -263,10 +276,10 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
     if @useDTM
       # Calculate the quote and context using DTM
 
-      startOffset = (@annotator.domMapper.getInfoForNode rangeStart).start
-      endOffset = (@annotator.domMapper.getInfoForNode rangeEnd).end
-      quote = @annotator.domMapper.getCorpus()[startOffset .. endOffset-1].trim()
-      [prefix, suffix] = @annotator.domMapper.getContextForCharRange startOffset, endOffset
+      startOffset = (state.getInfoForNode rangeStart).start
+      endOffset = (state.getInfoForNode rangeEnd).end
+      quote = state.getCorpus()[startOffset .. endOffset-1].trim()
+      [prefix, suffix] = state.getContextForCharRange startOffset, endOffset
 
       type: "TextQuoteSelector"
       exact: quote
@@ -280,30 +293,27 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
 
   # Create a TextPositionSelector around a range
-  _getTextPositionSelector: (range) ->
-    startOffset = (@annotator.domMapper.getInfoForNode range.start).start
-    endOffset = (@annotator.domMapper.getInfoForNode range.end).end
+  _getTextPositionSelector: (range, state) ->
+    startOffset = (state.getInfoForNode range.start).start
+    endOffset = (state.getInfoForNode range.end).end
 
     type: "TextPositionSelector"
     start: startOffset
     end: endOffset
 
   # Create a target around a normalizedRange
-  getTargetFromRange: (range) ->
-    # Before going any further, re-evaluate the presence of DTM
-    @checkDTM()
-
+  getTargetFromRange: (range, state) ->
     # Create the target
     result =
       source: @annotator.getHref()
       selector: [
         @_getRangeSelector range
-        @_getTextQuoteSelector range
+        @_getTextQuoteSelector range, state
       ]
 
     if @useDTM
       # If we have DTM, then we can save a position selector, too
-      result.selector.push @_getTextPositionSelector range
+      result.selector.push @_getTextPositionSelector range, state
     result
 
   # Look up the quote from the appropriate selector
@@ -342,13 +352,17 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
       dfd.resolve true # We don't care until the corpus has changed
       return dfd.promise()
 
-    # Get the current quote
-    corpus = @annotator.domMapper.getCorpus()
-    content = corpus[ anchor.start .. anchor.end-1 ].trim()
-    currentQuote = @annotator.normalizeString content
+    # Prepare d-t-m for action
+    @annotator.domMapper.prepare("verifying an anchor").then (s) =>
+      # Get the current quote
+      corpus = s.getCorpus()
+      content = corpus[ anchor.start ... anchor.end ].trim()
+      currentQuote = @annotator.normalizeString content
 
-    # Compare it with the stored one
-    dfd.resolve (currentQuote is anchor.quote)
+      # Compare it with the stored one
+      dfd.resolve (currentQuote is anchor.quote)
+
+    # Return the promise
     dfd.promise()
 
   # Create and anchor using the saved Range selector.

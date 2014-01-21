@@ -18,8 +18,6 @@ class TextPositionAnchor extends Annotator.Anchor
       startPage, endPage,
       quote, diffHTML, diffCaseOnly
 
-    @$ = Annotator.$
-
     # This pair of offsets is the key information,
     # upon which this anchor is based upon.
     unless @start? then throw new Error "start is required!"
@@ -28,6 +26,7 @@ class TextPositionAnchor extends Annotator.Anchor
     #console.log "Created TextPositionAnchor [", start, ":", end, "]"
 
     @Annotator = TextPositionAnchor.Annotator
+    @$ = @Annotator.$
 
   # This is how we create a highlight out of this kind of anchor
   _createHighlight: (page) ->
@@ -83,7 +82,7 @@ class TextRangeAnchor extends Annotator.Anchor
     unless @range? then throw new Error "range is required!"
 
     @Annotator = TextRangeAnchor.Annotator
-    @$ = Annotator.$
+    @$ = @Annotator.$
 
   # This is how we create a highlight out of this kind of anchor
   _createHighlight: ->

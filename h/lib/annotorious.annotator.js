@@ -7419,9 +7419,9 @@ window.Annotorious.ImagePlugin = function() {
     }
   };
   a.prototype.updateAnnotationAfterCreatingAnnotatorHighlight = function(a, c, d) {
-    var e = null;
+    var e = null, f = this;
     this.handlers[c.src][d]._imageAnnotator._viewer._annotations.forEach(function(c) {
-      c.temporaryID == a.temporaryID && (e = c, c.text = a.text, c.id = a.id, c.temporaryID = void 0, c.source = a.source, c.highlight = a.highlight, c.handler = a.handler, this._calculateHeatmapGeometry(c, a.image))
+      c.temporaryID == a.temporaryID && (e = c, c.text = a.text, c.id = a.id, c.temporaryID = void 0, c.source = a.source, c.highlight = a.highlight, c.handler = a.handler, f._calculateHeatmapGeometry(c, a.image))
     });
     e || (e = a, e._bad = !0);
     return e

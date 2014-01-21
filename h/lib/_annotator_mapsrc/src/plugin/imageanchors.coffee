@@ -175,6 +175,18 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     @annotator.subscribe "annotationsLoaded", =>
       if @visibleHighlights then @setHighlightsVisible true
 
+    # Annotorious selector should be in the top too.
+    style = $('#annotorious-dynamic-style')
+    if (!style.length)
+      style = $('<style id="annotorious-dynamic-style"></style>').appendTo(document.head)
+
+    style.text [
+      ".annotorious-annotationlayer {"
+      "  z-index: #{@annotator.maxZIndex + 20};"
+      "}"
+    ].join("\n")
+
+
     # React to image tags changes
     @observer = new MutationSummary
       callback: @_onMutation

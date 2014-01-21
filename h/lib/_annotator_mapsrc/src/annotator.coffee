@@ -253,6 +253,7 @@ class Annotator extends Delegator
     # dynamic elements in the page (notifications, dialogs, etc.) may well
     # have high z-indices that we can't catch using the above method.
     max = Math.max(max, 1000)
+    @maxZIndex = max
 
     style.text [
       ".annotator-adder, .annotator-outer, .annotator-notice {"

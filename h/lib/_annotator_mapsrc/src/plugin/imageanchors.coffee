@@ -120,10 +120,6 @@ class ImageAnchor extends Annotator.Anchor
 
   # This is how we create a highlight out of this kind of anchor
   _createHighlight: (page) ->
-
-    # TODO: compute some magic from the initial data, if we have to
-    #_doMagic()
-
     # Create the highlight
     new ImageHighlight this, page,
       @image, @index, @shape, @geometry, @annotorious
@@ -146,8 +142,8 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
 
     # Initalizing the Annotorious plugin
     annotoriousOptions =
-      minWidth: 50
-      minHeight: 50
+      minWidth: @options.minWidth ? 50
+      minHeight: @options.minHeight ? 50
 
     @annotorious = new Annotorious.ImagePlugin wrapper, annotoriousOptions, this
 

@@ -87,7 +87,10 @@ class Hypothesis extends Annotator
 
     @formatAnnotation = (annotation) ->
       rc = annotation.thread?.flattenChildren()?.length ? 0
-      reply_count = if rc < 2 then rc + ' reply' else rc + ' replies'
+      if rc > 0
+        reply_count = if rc < 2 then rc + ' reply' else rc + ' replies'
+      else reply_count = ""
+
       annotation._formatted =
         text: ($filter 'converter') annotation.text
         user: ($filter 'userName') annotation.user

@@ -7205,8 +7205,8 @@ annotorious.okfn.Popup.prototype.setPosition = function(a) {
 annotorious.okfn.Popup.prototype.setAnnotation = function(a) {
   this._currentAnnotation = a;
   this._text.innerHTML = a.text ? a.text.replace(/\n/g, "<br/>") : '<span class="annotorious-popup-empty">No comment</span>';
-  a.user && (this._user.innerHTML = a.user);
-  a.reply_count && (this._replyCount.innerHTML = a.reply_count)
+  this._user.innerHTML = a.user ? a.user : "";
+  this._replyCount.innerHTML = a.reply_count ? a.reply_count : ""
 };
 annotorious.okfn.Hint = function(a, b, c) {
   var d = this;
@@ -7476,7 +7476,7 @@ window.Annotorious.ImagePlugin = function() {
 }();
 annotorious.templates.annotator = {};
 annotorious.templates.annotator.popup = function() {
-  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-user"></span><br/><span class="annotorious-popup-text"></span><br/><span class="annotorious-popup-reply-count"></span></div>'
+  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-user user"></span><br/><span class="annotorious-popup-text"></span><span class="annotorious-popup-reply-count"></span></div>'
 };
 annotorious.templates.annotator.hint = function(a) {
   return'<div class="annotorious-hint" style="white-space:nowrap; position:absolute; top:0px; left:0px; pointer-events:none;"><div class="annotorious-hint-msg annotorious-opacity-fade">' + soy.$$escapeHtml(a.msg) + '</div><div class="annotorious-hint-icon" style="pointer-events:auto"></div></div>'

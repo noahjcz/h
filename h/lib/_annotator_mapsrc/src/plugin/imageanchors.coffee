@@ -37,9 +37,9 @@ class ImageHighlight extends Annotator.Highlight
     @active = false
     # using the image, shape, geometry arguments.
     @annotoriousAnnotation =
-      text: @annotation.text
-      user: @annotation.user
-      reply_count: @annotation.reply_count
+      text: @annotation._formatted?.text ? @annotation.text
+      user: @annotation._formatted?.user ? @annotation.user
+      reply_count: @annotation._formatted?.reply_count ? @annotation.reply_count
       id: @annotation.id
       temporaryID: @annotation.temporaryImageID
       image: image
@@ -64,9 +64,9 @@ class ImageHighlight extends Annotator.Highlight
 
   # React to changes in the underlying annotation
   annotationUpdated: ->
-    @annotoriousAnnotation.text = @annotation.text
-    @annotoriousAnnotation.user = @annotation.user
-    @annotoriousAnnotation.reply_count = @annotation.reply_count
+    @annotoriousAnnotation.text = @annotation._formatted?.text ? @annotation.text
+    @annotoriousAnnotation.user = @annotation._formatted?.user ? @annotation.user
+    @annotoriousAnnotation.reply_count = @annotation._formatted?.reply_count ? @annotation.reply_count
 
     @annotoriousAnnotation.id = @annotation.id
     if @oldID != @annotation.id

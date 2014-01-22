@@ -55,11 +55,11 @@ class Hypothesis extends Annotator
     addField: (-> )
 
   this.$inject = [
-    '$document', '$location', '$rootScope', '$route', '$window',
+    '$document', '$filter', '$location', '$rootScope', '$route', '$window',
     'authentication', 'drafts'
   ]
   constructor: (
-     $document,   $location,   $rootScope,   $route,   $window,
+     $document, $filter,  $location,   $rootScope,   $route,   $window,
      authentication,   drafts
   ) ->
     Gettext.prototype.parse_locale_data annotator_locale_data
@@ -85,11 +85,40 @@ class Hypothesis extends Annotator
       if not @plugins[name] and name of Annotator.Plugin
         this.addPlugin(name, opts)
 
+    # XXX: Must put subscribe here to ensure right subscription order
+    # This is for keeping the _formatted fields up-tp-date
+    this.subscribe 'annotationsLoaded', (annotations) =>
+      unless annotations instanceof Array then annotations = [annotations]
+      for annotation in annotations
+        rc = annotation.thread?.flattenChildren()?.length ? 0
+        annotation._formatted =
+          text: ($filter 'converter') annotation.text
+          user: ($filter 'userName') annotation.user
+          reply_count: if rc < 2 then rc + ' reply' else rc + ' replies'
+
+    this.subscribe 'annotationUpdated', (annotation) =>
+      rc = annotation.thread?.flattenChildren()?.length ? 0
+      annotation._formatted =
+        text: ($filter 'converter') annotation.text
+        user: ($filter 'userName') annotation.user
+        reply_count: if rc < 2 then rc + ' reply' else rc + ' replies'
+
+    # XXX: If we can call bridge.refreshish() directly, we do not need the loaded event.
+    this.subscribe 'annotationCreated', (annotation) =>
+      if annotation.references?
+        top_annotation = @threading.getContainer annotation.references[0]
+        this.publish 'annotationsLoaded', [top_annotation.message]
+
+    this.subscribe 'annotationDeleted', (annotation) =>
+      if annotation.references?
+        top_annotation = @threading.getContainer annotation.references[0]
+        this.publish 'annotationsLoaded', [top_annotation.message]
+
     # Set up the bridge plugin, which bridges the main annotation methods
     # between the host page and the panel widget.
     whitelist = [
       'diffHTML', 'inject', 'quote', 'ranges', 'target', 'id', 'references',
-      'uri', 'diffCaseOnly', 'text', 'user'
+      'uri', 'diffCaseOnly', 'text', 'user', '_formatted'
     ]
     this.addPlugin 'Bridge',
       gateway: true

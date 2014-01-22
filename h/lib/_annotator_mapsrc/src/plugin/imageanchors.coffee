@@ -182,10 +182,12 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
 
     style.text [
       ".annotorious-annotationlayer {"
+      "  z-index: #{@annotator.maxZIndex + 10};"
+      "}"
+      ".annotorious-popup {"
       "  z-index: #{@annotator.maxZIndex + 20};"
       "}"
     ].join("\n")
-
 
     # React to image tags changes
     @observer = new MutationSummary

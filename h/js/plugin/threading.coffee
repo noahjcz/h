@@ -43,6 +43,7 @@ class Annotator.Plugin.Threading extends Annotator.Plugin
     if parent? then @annotator.threading.pruneEmpties parent
 
   annotationsLoaded: (annotations) =>
+    unless annotations? then return
     this.thread a for a in annotations
 
   beforeAnnotationCreated: (annotation) =>

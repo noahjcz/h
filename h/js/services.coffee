@@ -85,26 +85,26 @@ class Hypothesis extends Annotator
       if not @plugins[name] and name of Annotator.Plugin
         this.addPlugin(name, opts)
 
-    # XXX: Must put subscribe here to ensure right subscription order
-    # This is for keeping the _formatted fields up-tp-date
-    this.subscribe 'annotationsLoaded', (annotations) =>
-      unless annotations instanceof Array then annotations = [annotations]
-      for annotation in annotations
-        rc = annotation.thread?.flattenChildren()?.length ? 0
-        annotation._formatted =
-          text: ($filter 'converter') annotation.text
-          user: ($filter 'userName') annotation.user
-          reply_count: if rc < 2 then rc + ' reply' else rc + ' replies'
-
-    this.subscribe 'annotationUpdated', (annotation) =>
+    @formatAnnotation = (annotation) ->
       rc = annotation.thread?.flattenChildren()?.length ? 0
       annotation._formatted =
         text: ($filter 'converter') annotation.text
         user: ($filter 'userName') annotation.user
         reply_count: if rc < 2 then rc + ' reply' else rc + ' replies'
 
+    # XXX: Must put subscribe here to ensure right subscription order
+    # This is for keeping the _formatted fields up-tp-date
+    this.subscribe 'annotationsLoaded', (annotations) =>
+      unless annotations instanceof Array then annotations = [annotations]
+      @formatAnnotation for annotation in annotations
+
+    this.subscribe 'annotationUpdated', (annotation) =>
+      @formatAnnotation annotation
+
     # XXX: If we can call bridge.refreshish() directly, we do not need the loaded event.
     this.subscribe 'annotationCreated', (annotation) =>
+      @formatAnnotation annotation
+
       if annotation.references?
         top_annotation = @threading.getContainer annotation.references[0]
         this.publish 'annotationsLoaded', [top_annotation.message]

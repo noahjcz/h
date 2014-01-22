@@ -107,6 +107,7 @@ annotator_document = Uglify(
 )
 annotator_dtm = Uglify(
     'lib/mutation-summary.js',
+    Coffee('lib/text_mapper_core.coffee', output='js/text_mapper_core.js'),    
     Coffee('lib/dom_text_mapper.coffee', output='js/dom_text_mapper.js'),
     'lib/annotator.domtextmapper.js',
     output='lib/annotator.dtm.min.js'
@@ -127,7 +128,8 @@ annotator_fuzzytext = Uglify(
     output='lib/annotator.fuzzytextanchors.min.js'
 )
 annotator_pdf = Uglify(
-    Coffee('lib/page_text_mapper_core.coffee', output='js/page_text_mapper_core.js'),    
+    Coffee('lib/page_text_mapper_core.coffee', output='js/page_text_mapper_core.js'),
+    Coffee('lib/pdf_text_mapper.coffee', output='js/pdf_text_mapper.js'),
     'lib/annotator.pdf.js',
     output='lib/annotator.pdf.min.js'
 )

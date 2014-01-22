@@ -7445,8 +7445,9 @@ window.Annotorious.ImagePlugin = function() {
     c.addAnnotation(a);
     a.handler = c
   };
-  a.prototype.deleteAnnotation = function(a) {
-    a.handler.deleteAnnotation(a)
+  a.prototype.deleteAnnotation = function(a, c, d) {
+    var e = void 0, e = a.handler ? a.handler : this.handlers[c.src][d];
+    e.deleteAnnotation(a)
   };
   a.prototype.drawAnnotationHighlights = function(a, c, d) {
     var e = this.handlers[a.src][c]._imageAnnotator._viewer;
@@ -7475,7 +7476,7 @@ window.Annotorious.ImagePlugin = function() {
 }();
 annotorious.templates.annotator = {};
 annotorious.templates.annotator.popup = function() {
-  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-user"></span><br/><span class="annotorious-popup-text"></span><span class="annotorious-popup-reply-count"></span></div>'
+  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-user"></span><br/><span class="annotorious-popup-text"></span><br/><span class="annotorious-popup-reply-count"></span></div>'
 };
 annotorious.templates.annotator.hint = function(a) {
   return'<div class="annotorious-hint" style="white-space:nowrap; position:absolute; top:0px; left:0px; pointer-events:none;"><div class="annotorious-hint-msg annotorious-opacity-fade">' + soy.$$escapeHtml(a.msg) + '</div><div class="annotorious-hint-icon" style="pointer-events:auto"></div></div>'

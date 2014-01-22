@@ -75,7 +75,7 @@ class ImageHighlight extends Annotator.Highlight
 
   # Remove all traces of this hl from the document
   removeFromDocument: ->
-    @annotorious.deleteAnnotation @annotoriousAnnotation
+    @annotorious.deleteAnnotation @annotoriousAnnotation, @_image, @_index
 
   # Is this a temporary hl?
   isTemporary: -> @_temporary

@@ -87,16 +87,17 @@ class Hypothesis extends Annotator
 
     @formatAnnotation = (annotation) ->
       rc = annotation.thread?.flattenChildren()?.length ? 0
+      reply_count = if rc < 2 then rc + ' reply' else rc + ' replies'
       annotation._formatted =
         text: ($filter 'converter') annotation.text
         user: ($filter 'userName') annotation.user
-        reply_count: if rc < 2 then rc + ' reply' else rc + ' replies'
+        reply_count: reply_count
 
     # XXX: Must put subscribe here to ensure right subscription order
     # This is for keeping the _formatted fields up-tp-date
     this.subscribe 'annotationsLoaded', (annotations) =>
       unless annotations instanceof Array then annotations = [annotations]
-      @formatAnnotation for annotation in annotations
+      (@formatAnnotation annotation) for annotation in annotations
 
     this.subscribe 'annotationUpdated', (annotation) =>
       @formatAnnotation annotation
@@ -107,12 +108,14 @@ class Hypothesis extends Annotator
 
       if annotation.references?
         top_annotation = @threading.getContainer annotation.references[0]
-        this.publish 'annotationsLoaded', [top_annotation.message]
+        if top_annotation.message?
+          this.publish 'annotationsLoaded', [top_annotation.message]
 
     this.subscribe 'annotationDeleted', (annotation) =>
       if annotation.references?
         top_annotation = @threading.getContainer annotation.references[0]
-        this.publish 'annotationsLoaded', [top_annotation.message]
+        if top_annotation.message?
+          this.publish 'annotationsLoaded', [top_annotation.message]
 
     # Set up the bridge plugin, which bridges the main annotation methods
     # between the host page and the panel widget.

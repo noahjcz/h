@@ -7154,6 +7154,8 @@ annotorious.okfn = {};
 annotorious.okfn.Popup = function(a, b, c) {
   this.element = goog.soy.renderAsElement(annotorious.templates.annotator.popup);
   this._text = goog.dom.query(".annotorious-popup-text", this.element)[0];
+  this._user = goog.dom.query(".annotorious-popup-user", this.element)[0];
+  this._replyCount = goog.dom.query(".annotorious-popup-reply-count", this.element)[0];
   this._image = a;
   this._eventBroker = b;
   this._wrapperElement = c;
@@ -7202,7 +7204,9 @@ annotorious.okfn.Popup.prototype.setPosition = function(a) {
 };
 annotorious.okfn.Popup.prototype.setAnnotation = function(a) {
   this._currentAnnotation = a;
-  this._text.innerHTML = a.text ? a.text.replace(/\n/g, "<br/>") : '<span class="annotorious-popup-empty">No comment</span>'
+  this._text.innerHTML = a.text ? a.text.replace(/\n/g, "<br/>") : '<span class="annotorious-popup-empty">No comment</span>';
+  a.user && (this._user.innerHTML = a.user);
+  a.reply_count && (this._replyCount.innerHTML = a.reply_count)
 };
 annotorious.okfn.Hint = function(a, b, c) {
   var d = this;
@@ -7421,7 +7425,7 @@ window.Annotorious.ImagePlugin = function() {
   a.prototype.updateAnnotationAfterCreatingAnnotatorHighlight = function(a, c, d) {
     var e = null, f = this;
     this.handlers[c.src][d]._imageAnnotator._viewer._annotations.forEach(function(c) {
-      c.temporaryID == a.temporaryID && (e = c, c.text = a.text, c.id = a.id, c.temporaryID = void 0, c.source = a.source, c.highlight = a.highlight, c.handler = a.handler, f._calculateHeatmapGeometry(c, a.image))
+      c.temporaryID == a.temporaryID && (e = c, c.text = a.text, c.user = a.user, c.reply_count = a.reply_count, c.id = a.id, c.temporaryID = void 0, c.source = a.source, c.highlight = a.highlight, c.handler = a.handler, f._calculateHeatmapGeometry(c, a.image))
     });
     e || (e = a, e._bad = !0);
     return e
@@ -7471,7 +7475,7 @@ window.Annotorious.ImagePlugin = function() {
 }();
 annotorious.templates.annotator = {};
 annotorious.templates.annotator.popup = function() {
-  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-text"></span></div>'
+  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-user"></span><br/><span class="annotorious-popup-text"></span><br/><span class="annotorious-popup-reply-count"></span></div>'
 };
 annotorious.templates.annotator.hint = function(a) {
   return'<div class="annotorious-hint" style="white-space:nowrap; position:absolute; top:0px; left:0px; pointer-events:none;"><div class="annotorious-hint-msg annotorious-opacity-fade">' + soy.$$escapeHtml(a.msg) + '</div><div class="annotorious-hint-icon" style="pointer-events:auto"></div></div>'

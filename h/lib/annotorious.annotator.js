@@ -7471,7 +7471,7 @@ window.Annotorious.ImagePlugin = function() {
 }();
 annotorious.templates.annotator = {};
 annotorious.templates.annotator.popup = function() {
-  return'<div class="annotorious-popup top-left" style="positio      n:absolute"><span class="annotorious-popup-text"></span></div>'
+  return'<div class="annotorious-popup top-left" style="position:absolute"><span class="annotorious-popup-text"></span></div>'
 };
 annotorious.templates.annotator.hint = function(a) {
   return'<div class="annotorious-hint" style="white-space:nowrap; position:absolute; top:0px; left:0px; pointer-events:none;"><div class="annotorious-hint-msg annotorious-opacity-fade">' + soy.$$escapeHtml(a.msg) + '</div><div class="annotorious-hint-icon" style="pointer-events:auto"></div></div>'

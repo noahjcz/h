@@ -75,30 +75,22 @@ class Anchor
       for page in pagesTodo
         promises.push p = @_createHighlight page  # Get a promise
         p.then (hl) => created.push @highlight[page] = hl
+        p.fail (e) =>
+          console.log "Error while trying to create highlight:",
+            e.message, e.error.stack
 
       # Wait for all attempts for finish/fail
       Annotator.$.when(promises...).always =>
+        # Finished creating the highlights
+
         # Check if everything is rendered now
-        @fullyRealized = renderedPages.length is @endPage - @startPage + 1
+        @fullyRealized =
+          (renderedPages.length is @endPage - @startPage + 1) and # all rendered
+          (created.length is pagesTodo.length) # all hilited
 
         # Announce the creation of the highlights
-        @annotator.publish 'highlightsCreated', created
-
-    catch error
-      console.log "Error while trying to create highlight:", error.stack
-
-      @fullyRealized = false
-
-      # Try to undo the highlights already created
-      # TODO: what is some of the async HL creations is still pending?
-      # This try ... catch should be replaced with an async failure handler.
-      for page in pagesTodo when @highlight[page]
-        try
-          @highlight[page].removeFromDocument()
-          console.log "Removed broken HL from page", page
-        catch hlError
-          console.log "Could not remove broken HL from page", page, ":",
-            hlError.stack
+        if created.length
+          @annotator.publish 'highlightsCreated', created
 
   # Remove the highlights for the given set of pages
   virtualize: (pageIndex) =>

@@ -38,23 +38,35 @@ class TextPositionAnchor extends Annotator.Anchor
     @annotator.domMapper.prepare("highlighting").then (s) =>
       # When the d-t-m is ready, do this
 
-      # First we create the range from the stored stard and end offsets
-      mappings = s.getMappingsForCharRange @start, @end, [page]
+      try
+        # First we create the range from the stored stard and end offsets
+        mappings = s.getMappingsForCharRange @start, @end, [page]
 
-      # Get the wanted range out of the response of DTM
-      realRange = mappings.sections[page].realRange
+        # Get the wanted range out of the response of DTM
+        realRange = mappings.sections[page].realRange
 
-      # Get a BrowserRange
-      browserRange = new @Annotator.Range.BrowserRange realRange
+        # Get a BrowserRange
+        browserRange = new @Annotator.Range.BrowserRange realRange
 
-      # Get a NormalizedRange
-      normedRange = browserRange.normalize @annotator.wrapper[0]
+        # Get a NormalizedRange
+        normedRange = browserRange.normalize @annotator.wrapper[0]
 
-      # Create the highligh
-      hl = new @Annotator.TextHighlight this, page, normedRange
+        # Create the highligh
+        hl = new @Annotator.TextHighlight this, page, normedRange
 
-      # Resolve the promise
-      dfd.resolve hl
+        # Resolve the promise
+        dfd.resolve hl
+
+      catch error
+        # Something went wrong during creating the highlight
+
+        # Reject the promise
+        try
+          dfd.reject
+            message: "Cought exception"
+            error: error
+        catch e2
+          console.log "WTF", e2.stack
 
     # Return the promise
     dfd.promise()
@@ -277,7 +289,7 @@ class Annotator.Plugin.TextAnchors extends Annotator.Plugin
 
       startOffset = (state.getInfoForNode rangeStart).start
       endOffset = (state.getInfoForNode rangeEnd).end
-      quote = state.getCorpus()[startOffset .. endOffset-1].trim()
+      quote = state.getCorpus()[ startOffset ... endOffset ].trim()
       [prefix, suffix] = state.getContextForCharRange startOffset, endOffset
 
       type: "TextQuoteSelector"

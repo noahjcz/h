@@ -7297,6 +7297,7 @@ annotorious.okfn.ImagePlugin = function(a, b, c, d) {
     var b = e._imageAnnotator._image.src + "#" + (new Date).toString(), c = {shapes:[a.shape], temporaryID:b, image:e._imageAnnotator._image, handler:e};
     e._imageAnnotator.addAnnotation(c);
     e._imageAnnotator.stopSelection();
+    goog.dom.classes.remove(e._imageAnnotator.element, "annotorious-selection-in-progress");
     e._imagePlugin.annotate(e._imageAnnotator._image, e._index, a.shape.type, a.shape.geometry, b, c)
   };
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_COMPLETED, this._newSelectionHandler);
@@ -7306,6 +7307,7 @@ annotorious.okfn.ImagePlugin = function(a, b, c, d) {
       e._imageAnnotator.getAnnotationsAt(a.x, a.y).forEach(function(a) {
         b.push(a.highlight.annotation)
       });
+      goog.dom.classes.remove(e._imageAnnotator.element, "annotorious-selection-in-progress");
       e._imagePlugin.showAnnotations(b)
     }
     annotorious.events.ui.hasMouse && goog.style.showElement(e._imageAnnotator._editCanvas, !1);
@@ -7318,7 +7320,8 @@ annotorious.okfn.ImagePlugin = function(a, b, c, d) {
   this._imageAnnotator._eventBroker.addHandler(annotorious.events.EventType.SELECTION_STARTED, this._newSelectionStartedHandler);
   var f = annotorious.events.ui.hasTouch ? this._imageAnnotator._editCanvas : this._imageAnnotator._viewCanvas;
   this._eventDownListener = goog.events.listen(f, annotorious.events.ui.EventType.DOWN, function(a) {
-    e.clickEvent = a
+    e.clickEvent = a;
+    goog.dom.classes.add(e._imageAnnotator.element, "annotorious-selection-in-progress")
   });
   this._eventMoveListener = goog.events.listen(f, annotorious.events.ui.EventType.MOVE, function(a) {
     var a = annotorious.events.ui.sanitizeCoordinates(a, f), b = e._imageAnnotator.getAnnotationsAt(a.x, a.y), c = [];

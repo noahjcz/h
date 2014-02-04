@@ -186,7 +186,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
       style = $('<style id="annotorious-dynamic-style"></style>').appendTo(document.head)
 
     style.text [
-      ".annotorious-annotationlayer {"
+      ".annotorious-selection-in-progress {"
       "  z-index: #{@annotator.maxZIndex + 10};"
       "}"
       ".annotorious-popup {"

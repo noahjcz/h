@@ -188,6 +188,7 @@ class Annotator.Plugin.ImageAnchors extends Annotator.Plugin
     style.text [
       ".annotorious-selection-in-progress {"
       "  z-index: #{@annotator.maxZIndex + 10};"
+      "  opacity: 0.75;"
       "}"
       ".annotorious-popup {"
       "  z-index: #{@annotator.maxZIndex + 20};"
